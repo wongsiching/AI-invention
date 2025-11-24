@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>重慶家庭旅行大全 2025</title>
+    <!-- 引入可愛圓體字型 -->
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #FF8BA7; /* 櫻花粉 */
+            --secondary: #FFC069; /* 溫暖橘 */
+            --blue: #5CDBD3; /* 蒂芙尼藍 */
+            --green: #95DE64; /* 清新綠 */
+            --bg: #FFFBE6; /* 奶油底色 */
+            --white: #FFFFFF;
+            --text: #595959;
+            --shadow: 0 8px 20px rgba(0,0,0,0.1);
+            --radius: 16px;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: 'Zen Maru Gothic', sans-serif;
+            background-color: var(--bg);
+            background-image: radial-gradient(#FFD6E7 15%, transparent 16%), radial-gradient(#FFF1B8 15%, transparent 16%);
+            background-size: 60px 60px;
+            background-position: 0 0, 30px 30px;
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            padding-bottom: 90px;
+        }
+
+        /* --- Header --- */
+        header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px 20px;
+            border-bottom-left-radius: 25px;
+            border-bottom-right-radius: 25px;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-title { display: flex; align-items: center; justify-content: space-between; }
+        h1 { margin: 0; font-size: 1.3rem; color: #333; }
+        .date-badge { background: var(--primary); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
+
+        /* --- View Sections --- */
+        .view-section { display: none; padding: 20px; animation: fadeIn 0.4s ease-out; }
+        .view-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- Day Scroller --- */
+        .day-scroller { display: flex; overflow-x: auto; gap: 12px; padding: 10px 0 20px 0; scrollbar-width: none; }
+        .day-scroller::-webkit-scrollbar { display: none; }
+        .day-btn {
+            flex: 0 0 auto; background: var(--white); border: 2px solid white; padding: 10px 18px; border-radius: 20px;
+            font-weight: bold; color: #888; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .day-btn.active { background: var(--primary); color: white; border-color: var(--primary); transform: scale(1.05); box-shadow: 0 8px 15px rgba(255, 139, 167, 0.4); }
+
+        /* --- Info Cards --- */
+        .card {
+            background: var(--white); border-radius: var(--radius); margin-bottom: 20px; box-shadow: var(--shadow);
+            position: relative; overflow: hidden; transition: transform 0.2s; border: 1px solid rgba(0,0,0,0.03); cursor: pointer;
+        }
+        .card:active { transform: scale(0.98); }
+        .card-img-wrapper { height: 160px; width: 100%; overflow: hidden; position: relative; }
+        .card-img { width: 100%; height: 100%; object-fit: cover; }
+        .card-tag {
+            position: absolute; top: 10px; left: 10px; padding: 4px 12px; border-radius: 20px;
+            font-size: 0.75rem; font-weight: bold; color: white; backdrop-filter: blur(4px); z-index: 2;
+        }
+        .card-content { padding: 15px; }
+        .card h3 { margin: 0 0 6px 0; font-size: 1.2rem; color: #333; display: flex; justify-content: space-between; align-items: center;}
+        .card p { margin: 0; font-size: 0.9rem; color: #666; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;}
+        
+        .click-hint { font-size: 0.75rem; color: #bbb; margin-top: 8px; text-align: right; display: block;}
+
+        .tag-blue { background: rgba(77, 150, 255, 0.9); }
+        .tag-orange { background: rgba(255, 139, 83, 0.9); }
+        .tag-green { background: rgba(110, 203, 99, 0.9); }
+        .tag-purple { background: rgba(157, 114, 255, 0.9); }
+
+        /* --- Modal (Detail View) --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 1000;
+            display: none; align-items: center; justify-content: center;
+            backdrop-filter: blur(5px);
+            opacity: 0; transition: opacity 0.3s;
+        }
+        .modal-overlay.open { display: flex; opacity: 1; }
+        
+        .modal-content {
+            background: white; width: 90%; max-width: 500px; max-height: 85vh;
+            border-radius: 24px; overflow-y: auto; position: relative;
+            transform: translateY(20px); transition: transform 0.3s;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+        .modal-overlay.open .modal-content { transform: translateY(0); }
+
+        .modal-img { width: 100%; height: 200px; object-fit: cover; }
+        .modal-body { padding: 25px; }
+        .modal-title { font-size: 1.6rem; margin: 0 0 15px 0; color: #333; border-bottom: 2px dashed #eee; padding-bottom: 10px;}
+        
+        .modal-section-title { font-size: 1rem; color: var(--primary); font-weight: bold; margin-top: 20px; display: flex; align-items: center; gap: 8px;}
+        .modal-text { font-size: 0.95rem; line-height: 1.8; color: #555; margin-top: 5px; }
+        
+        .close-btn {
+            position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.5);
+            color: white; border: none; width: 32px; height: 32px; border-radius: 50%;
+            font-size: 1.2rem; cursor: pointer; z-index: 10;
+        }
+
+        .modal-map-btn {
+            display: block; width: 100%; background: #F0F5FF; color: #2F54EB;
+            text-align: center; padding: 12px; border-radius: 12px; margin-top: 25px;
+            text-decoration: none; font-weight: bold;
+        }
+
+        /* --- Checklist & Souvenirs --- */
+        .checklist-group { margin-bottom: 25px; }
+        .checklist-group h2 { font-size: 1.2rem; border-left: 5px solid var(--secondary); padding-left: 12px; margin-bottom: 15px; }
+        .check-item { display: flex; align-items: center; background: var(--white); padding: 15px; border-radius: 12px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); cursor: pointer; }
+        .check-item.checked { background: #F6FFED; opacity: 0.7; }
+        .check-item input { width: 22px; height: 22px; margin-right: 15px; accent-color: var(--green); }
+
+        .souvenir-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .souvenir-card { background: var(--white); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); text-align: center; padding-bottom: 15px; }
+        .s-img-box { height: 120px; overflow: hidden; }
+        .s-img { width: 100%; height: 100%; object-fit: cover; }
+        .s-name { font-weight: bold; margin: 10px 0 5px 0; display: block; }
+        .s-desc { font-size: 0.8rem; color: #888; }
+
+        /* --- Bottom Nav --- */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px); display: flex; padding: 12px 0; border-top-left-radius: 25px;
+            border-top-right-radius: 25px; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); z-index: 200;
+        }
+        .nav-item { text-align: center; color: #bbb; font-size: 0.75rem; flex: 1; transition: all 0.2s; cursor: pointer;}
+        .nav-item.active { color: var(--primary); font-weight: bold; transform: translateY(-2px); }
+        .nav-icon { font-size: 1.6rem; display: block; margin-bottom: 4px; }
+
+        .day-detail { display: none; }
+        .day-detail.active { display: block; animation: slideUp 0.5s ease; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+    </style>
+</head>
+<body>
+
+    <!-- Modal for Details -->
+    <div id="detailModal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal(event)">×</button>
+            <img src="" id="modalImg" class="modal-img">
+            <div class="modal-body">
+                <h2 id="modalTitle" class="modal-title">標題</h2>
+                
+                <div class="modal-section-title">✨ 特色介紹</div>
+                <p id="modalDesc" class="modal-text">這裡會顯示景點的詳細介紹...</p>
+
+                <div class="modal-section-title">💡 值得留意</div>
+                <div style="background: #FFF7E6; padding: 10px; border-radius: 8px; border-left: 4px solid #FFC069;">
+                    <p id="modalTips" class="modal-text" style="margin:0; font-size: 0.9rem;">這裡會顯示實用小貼士...</p>
+                </div>
+
+                <a href="#" id="modalMap" target="_blank" class="modal-map-btn">📍 打開 Google Map 導航</a>
+            </div>
+        </div>
+    </div>
+
+    <header>
+        <div class="header-title">
+            <h1>🐼 重慶家庭旅行大全</h1>
+            <span class="date-badge">12/21 - 26</span>
+        </div>
+    </header>
+
+    <!-- VIEW 1: 行程 -->
+    <div id="view-trip" class="view-section active">
+        <div class="day-scroller">
+            <button class="day-btn active" onclick="switchDay('d1', this)">12/21<br>抵達</button>
+            <button class="day-btn" onclick="switchDay('d2', this)">12/22<br>魔幻</button>
+            <button class="day-btn" onclick="switchDay('d3', this)">12/23<br>輕軌</button>
+            <button class="day-btn" onclick="switchDay('d4', this)">12/24<br>熊貓</button>
+            <button class="day-btn" onclick="switchDay('d5', this)">12/25<br>塗鴉</button>
+            <button class="day-btn" onclick="switchDay('d6', this)">12/26<br>返程</button>
+        </div>
+
+        <!-- DAY 1 -->
+        <div id="d1" class="day-detail active">
+            <div class="card" onclick="openDetail(this)"
+                data-title="✈️ 抵達重慶 (CKG)"
+                data-img="https://images.unsplash.com/photo-1570710891163-6d3b5c47248b?auto=format&fit=crop&w=800&q=80"
+                data-desc="歡迎來到山城！江北國際機場是重慶的主要門戶，T3航站樓設計現代。一出機場就能感受到重慶濕潤的空氣。"
+                data-tips="出機場後建議直接到正規計程車排隊區打車，或使用網約車（滴滴）。避免乘坐拉客的黑車。記得將酒店地址顯示成大字給司機看。"
+                data-map="https://www.google.com/maps/search/?api=1&query=重慶江北國際機場">
+                <div class="card-img-wrapper">
+                    <span class="card-tag tag-green">交通</span>
+                    <img src="https://images.unsplash.com/photo-1570710891163-6d3b5c47248b?auto=format&fit=crop&w=800&q=80" class="card-img">
+                </div>
+                <div class="card-content">
+                    <h3>抵達重慶 (CKG) <span>👉</span></h3>
+                    <p>歡迎來到山城！點擊查看機場交通貼士。</p>
+                    <span class="click-hint">點擊查看詳情</span>
+                </div>
+            </div>
+
+            <div class="card" onclick="openDetail(this)"
+                data-title="🏨 入住酒店 (解放碑周邊)"
+                data-img="https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+                data-desc="建議住在解放碑或洪崖洞附近，這裡是市中心，交通最方便，吃喝玩樂步行即達。"
+                data-tips="辦理入住時，所有家庭成員（包括小朋友）的證件都需要登記。記得問前台拿一張酒店的名片，方便打車回來給司機看。"
+                data-map="https://www.google.com/maps/search/?api=1&query=重慶解放碑">
+                <div class="card-img-wrapper">
+                    <span class="card-tag tag-purple">住宿</span>
+                    <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80" class="card-img">
+                </div>
+                <div class="card-content">
+                    <h3>入住酒店 <span>👉</span></h3>
+                    <p>放下行李，適應氣候。別忘了登記入住。</p>
+                    <span class="click-hint">點擊查看詳情</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- DAY 2 -->
+        <div id="d2" class="day-detail">
+            <div class="card" onclick="openDetail(this)"
+                data-title="🏙️ 解放碑 & 八一好吃街"
+                data-img="https://images.unsplash.com/photo-1641394749386-31da5b82207b?auto=format&fit=crop&w=800&q=80"
+                data-desc="【解放碑】是重慶的精神堡壘，也是中國唯一一座紀念抗日戰爭勝利的紀念碑。周圍是繁華的步行街。【好吃街】則是小吃聚集地。"
+                data-tips="好吃街必試：1. 好又來酸辣粉（人均10元，路邊站著吃才有風味）；2. 山城小湯圓（解辣神器）；3. 現炸酥肉。人多注意保管財物。"
+                data-map="https://www.google.com/maps/search/?api=1&query=重慶解放碑步行街">
+                <div class="card-img-wrapper">
+                    <span class="card-tag tag-blue">地標</span>
+                    <img src="https://images.unsplash.com/photo-1641394749386-31da5b82207b?auto=format&fit=crop&w=800&q=80" class="card-img">
+                </div>
+                <div class="card-content">
+                    <h3>解放碑 & 好吃街 <span>👉</span></h3>
+                    <p>重慶地標。點擊看必吃美食清單。</p>
+                    <span class="click-hint">點擊查看詳情</span>
+                </div>
+            </div>
+
+            <div class="card" onclick="openDetail(this)"
+                data-title="✨ 洪崖洞夜景"
+                data-img="https://images.unsplash.com/photo-1505166037060-d2c65a7d67bd?auto=format&fit=crop&w=800&q=80"
+                data-desc="依山而建的吊腳樓風格建築，晚上開燈後金碧輝煌，像極了《千與千尋》的場景。"
+                data-tips="⚠️ 避坑：不要進去裡面擠，裡面多是賣遊客紀念品。最佳拍照點在「千廝門大橋」上，或者對面大劇院下的江灘。通常晚上11點就會熄燈，不要太晚去！"
+                data-map="https://www.google.com/maps/search/?api=1&query=重慶洪崖洞">
+                <div class="card-img-wrapper">
+                    <span class="card-tag tag-orange">夜景</span>
+                    <img src="https://images.unsplash.com/photo-1505166037060-d2c65a7d67bd?auto=format&fit=crop&w=800&q=80" class="card-img">
+                </div>
+                <div class="card-content">
+                    <h3>洪崖洞夜景 <span>👉</span></h3>
+                    <p>現實版神隱少女。點擊看最佳拍照機位。</p>
+                    <span class="click-hint">點擊查看詳情</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- DAY 3 -->
+        <div id="d3" class="day-detail">
+            <div class="card" onclick="openDetail(this)"
+                data-title="🚋 李子壩輕軌站"
+                data-img="https://images.unsplash.com/photo-1558230559-0f6f059639e4?auto=format&fit=crop&w=800&q=80"
+                data-desc="全網爆紅的「輕軌穿樓」！重慶軌道交通2號線直接穿過居民樓的6-8層，是山城地形的奇觀。"
+                data-tips="建議玩法：先坐輕軌體驗「身體穿樓」，然後在「李子壩站」下車，走到樓下的觀景平台。可以拍張嘴「吞輕軌」的錯位照，小朋友會覺得很有趣。"
+                data-map="https://www.google.com/maps/search/?api=1&query=重慶李子壩觀景平台">
+                <div class="card-img-wrapper">
+                    <span class="card-tag tag-green">奇觀</span>
+                    <img src="https://images.unsplash.com/photo-1558230559-0f6f059639e4?auto=format&fit=crop&w=800&q=80" class="card-img">
+                </div>
+                <div class="card-content">
+                    <h3>李子壩輕軌穿樓 <span>👉</span></h3>
+                    <p>車在樓中跑。點擊看如何拍錯位照。</p>
+                    <span class="click-hint">點擊查看詳情</span>
+                </div>
+            </div>
+
+            <div class="card" onclick="openDetail(this)"
+                data-title="🏮 磁器口古鎮"
+                data-img="https://images.unsplash.com/photo-1543085351-b06213697921?auto=format&fit=crop&w=800&q=80"
+                data-desc="「一條石板路，千年磁器口」。這裡是重慶縮影，有老茶館、碼頭文化，還有很多非遺表演。"
+                data-tips="1. 主街人非常多，建議往兩邊的小巷子鑽，更有韻味。2. 這裡盛產「陳麻花」，可以試吃後再買。3. 可以在茶館看一場「川劇變臉」，非常精彩。"
+                data-map="https://www.google.com/maps/search/?api=1&query=重慶磁器口古鎮">
+                <div class="card-img-wrapper">
+                    <span class="card-tag tag-blue">古鎮</span>
+                    <img src="https://images.unsplash.com/photo-1543085351-b06213697921?auto=format&fit=crop&w=800&q=80" class="card-img">
+                </div>
+                <div class="card-content">
+                    <h3>磁器口古鎮 <span>👉</span></h3>
+                    <p>買麻花、看變臉。點擊看遊玩攻略。</p>
+                    <span class="click-hint">點擊查看詳情</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- DAY 4 -->
+        <div id="d4" class="day-detail">
+            <div class="card" onclick="openDetail(this)"
+                data-title="🐼 重慶動物園 (熊貓館)"
+                data-img="https://images.unsplash.com/photo-1564349683136-77e08dba1ef7?auto=format&fit=crop&w=800&q=80"
+                data-desc="這裡的熊貓數量很多，而且距離遊客很近！最出名的是「四喜丸子」四隻熊貓圍在一桌吃竹子。"
+                data-tips="一定要早上去！建議9:00前入園，這時候熊貓在吃早餐，最活躍。到了下午它們基本都在睡覺。從東二門進去離熊貓館最近。"
+                data-map="https://www.google.com/maps/search/?api=1&query=重慶動物園">
+                <div class="card-img-wrapper">
+                    <span class="card-tag tag-blue">親子</span>
+                    <img src="https://images.unsplash.com/photo-1564349683136-77e08dba1ef7?auto=format&fit=crop&w=800&q=80" class="card-img">
+                </div>
+                <div class="card-content">
+                    <h3>重慶動物園 <span>👉</span></h3>
+                    <p>看熊貓「四喜丸子」。點擊看最佳觀賞時間。</p>
+                    <span class="click-hint">點擊查看詳情</span>
+                </div>
+            </div>
+
+            <div class="card" onclick="openDetail(this)"
+                data-title="🚠 長江索道"
+                data-img="https://images.unsplash.com/photo-1504280548325-33df49c4f34d?auto=format&fit=crop&w=800&q=80"
+                data-desc="被譽為「萬里長江第一索」，是以前重慶人過江的交通工具，現在是俯瞰江景的最佳方式。"
+                data-tips="⚠️ 必須預約！一定要提前在微信關注「重慶索道」公眾號買票。現場排隊可能要1-2小時，建議買單程票即可，回程可以坐地鐵。"
+                data-map="https://www.google.com/maps/search/?api=1&query=重慶長江索道">
+                <div class="card-img-wrapper">
+                    <span class="card-tag tag-green">體驗</span>
+                    <img src="https://images.unsplash.com/photo-1504280548325-33df49c4f34d?auto=format&fit=crop&w=800&q=80" class="card-img">
+                </div>
+                <div class="card-content">
+                    <h3>長江索道 <span>👉</span></h3>
+                    <p>飛越長江。點擊看如何預約及避開排隊。</p>
+                    <span class="click-hint">點擊查看詳情</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- DAY 5 -->
+        <div id="d5" class="day-detail">
+            <div class="card" onclick="openDetail(this)"
+                data-title="🏭 鵝嶺二廠文創園"
+                data-img="https://images.unsplash.com/photo-1569336415962-a4bd9f69cd83?auto=format&fit=crop&w=800&q=80"
+                data-desc="前身是印鈔廠，現在是文藝青年的聚集地。保留了工業風的舊廠房，電影《從你的全世界路過》取景地。"
+                data-tips="這裡地勢很高，可以俯瞰重慶兩江景色。園區內有很多特色小店和咖啡館，適合下午慢悠悠地逛和拍照。"
+                data-map="https://www.google.com/maps/search/?api=1&query=重慶鵝嶺二廠文創公園">
+                <div class="card-img-wrapper">
+                    <span class="card-tag tag-purple">文藝</span>
+                    <img src="https://images.unsplash.com/photo-1569336415962-a4bd9f69cd83?auto=format&fit=crop&w=800&q=80" class="card-img">
+                </div>
+                <div class="card-content">
+                    <h3>鵝嶺二廠 <span>👉</span></h3>
+                    <p>工業風拍照聖地。點擊看特色。</p>
+                    <span class="click-hint">點擊查看詳情</span>
+                </div>
+            </div>
+
+            <div class="card" onclick="openDetail(this)"
+                data-title="🎨 黃角坪塗鴉街"
+                data-img="https://images.unsplash.com/photo-1499781350541-7783f6c6a0c8?auto=format&fit=crop&w=800&q=80"
+                data-desc="四川美術學院老校區外面的一條街，整條街的建築樓體都被塗滿了彩色的塗鴉，非常壯觀。"
+                data-tips="這裡有一家「梯坎豆花」非常出名，是幾十年的老店，一定要去嚐嚐。這裡色彩鮮艷，建議穿素色衣服拍照更突出。"
+                data-map="https://www.google.com/maps/search/?api=1&query=重慶黃角坪塗鴉藝術街">
+                <div class="card-img-wrapper">
+                    <span class="card-tag tag-blue">藝術</span>
+                    <img src="https://images.unsplash.com/photo-1499781350541-7783f6c6a0c8?auto=format&fit=crop&w=800&q=80" class="card-img">
+                </div>
+                <div class="card-content">
+                    <h3>黃角坪塗鴉街 <span>👉</span></h3>
+                    <p>繽紛色彩世界。點擊看周邊美食。</p>
+                    <span class="click-hint">點擊查看詳情</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- DAY 6 -->
+        <div id="d6" class="day-detail">
+            <div class="card" onclick="openDetail(this)"
+                data-title="🏠 返程 (江北機場)"
+                data-img="https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?auto=format&fit=crop&w=800&q=80"
+                data-desc="帶著滿滿的回憶和手信，準備回家啦！"
+                data-tips="重慶被稱為「堵城」，去機場的路況難以預測，特別是上下班高峰期。建議至少提前 3-4 小時從酒店出發。檢查所有證件和貴重物品。"
+                data-map="https://www.google.com/maps/search/?api=1&query=重慶江北國際機場">
+                <div class="card-img-wrapper">
+                    <span class="card-tag tag-green">返程</span>
+                    <img src="https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?auto=format&fit=crop&w=800&q=80" class="card-img">
+                </div>
+                <div class="card-content">
+                    <h3>返程去機場 <span>👉</span></h3>
+                    <p>再見重慶！點擊查看送機提醒。</p>
+                    <span class="click-hint">點擊查看詳情</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIEW 2: CHECKLIST -->
+    <div id="view-list" class="view-section">
+        <div class="checklist-group">
+            <h2>🆔 重要證件</h2>
+            <div class="check-item" onclick="toggleCheck(this)">
+                <input type="checkbox"> <div><strong>回鄉證</strong> <br><small>港澳居民必備，檢查有效期</small></div>
+            </div>
+            <div class="check-item" onclick="toggleCheck(this)">
+                <input type="checkbox"> <div><strong>身份證</strong> <br><small>成人及兒童都需準備</small></div>
+            </div>
+            <div class="check-item" onclick="toggleCheck(this)">
+                <input type="checkbox"> <div><strong>電子支付</strong> <br><small>支付寶/微信 (需綁定回鄉證)</small></div>
+            </div>
+        </div>
+        <div class="checklist-group">
+            <h2>🧣 12月衣物 (6-11°C)</h2>
+            <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox"> 厚羽絨外套 (濕冷體感很冷)</div>
+            <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox"> 舒適防滑運動鞋 (每日2萬步起)</div>
+            <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox"> 圍巾/手套/帽子</div>
+        </div>
+    </div>
+
+    <!-- VIEW 3: 手信 -->
+    <div id="view-shop" class="view-section">
+        <div class="souvenir-grid">
+            <div class="souvenir-card">
+                <div class="s-img-box"><img src="https://images.unsplash.com/photo-1626804475297-411dbe62241b?auto=format&fit=crop&w=600&q=80" class="s-img"></div>
+                <div style="padding:10px;">
+                    <span class="s-name">火鍋底料</span>
+                    <span class="s-desc">品牌推薦：橋頭、名揚。建議去當地超市買，比景區便宜。</span>
+                </div>
+            </div>
+            <div class="souvenir-card">
+                <div class="s-img-box"><img src="https://images.unsplash.com/photo-1615485925763-867862889095?auto=format&fit=crop&w=600&q=80" class="s-img"></div>
+                <div style="padding:10px;">
+                    <span class="s-name">陳麻花</span>
+                    <span class="s-desc">磁器口特產，有甜鹹多種口味，適合送同事。</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <div class="nav-item active" onclick="switchView('view-trip', this)">
+            <span class="nav-icon">🗺️</span>行程
+        </div>
+        <div class="nav-item" onclick="switchView('view-list', this)">
+            <span class="nav-icon">✅</span>清單
+        </div>
+        <div class="nav-item" onclick="switchView('view-shop', this)">
+            <span class="nav-icon">🎁</span>手信
+        </div>
+    </nav>
+
+    <script>
+        function switchView(viewId, navEl) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            navEl.classList.add('active');
+            window.scrollTo(0, 0);
+        }
+
+        function switchDay(dayId, btnEl) {
+            document.querySelectorAll('.day-detail').forEach(el => el.classList.remove('active'));
+            document.getElementById(dayId).classList.add('active');
+            document.querySelectorAll('.day-btn').forEach(el => el.classList.remove('active'));
+            btnEl.classList.add('active');
+            btnEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+
+        function toggleCheck(itemEl) {
+            const checkbox = itemEl.querySelector('input[type="checkbox"]');
+            if (event.target !== checkbox) checkbox.checked = !checkbox.checked;
+            itemEl.classList.toggle('checked', checkbox.checked);
+        }
+
+        // Modal Logic
+        function openDetail(cardEl) {
+            const modal = document.getElementById('detailModal');
+            
+            // Populate Data
+            document.getElementById('modalTitle').textContent = cardEl.getAttribute('data-title');
+            document.getElementById('modalImg').src = cardEl.getAttribute('data-img');
+            document.getElementById('modalDesc').textContent = cardEl.getAttribute('data-desc');
+            document.getElementById('modalTips').textContent = cardEl.getAttribute('data-tips');
+            document.getElementById('modalMap').href = cardEl.getAttribute('data-map');
+            
+            // Show
+            modal.classList.add('open');
+            document.body.style.overflow = 'hidden'; // Prevent scrolling bg
+        }
+
+        function closeModal(e) {
+            // Close if clicking overlay or close button
+            if(e.target.id === 'detailModal' || e.target.classList.contains('close-btn')) {
+                document.getElementById('detailModal').classList.remove('open');
+                document.body.style.overflow = 'auto';
+            }
+        }
+    </script>
+</body>
+</html>
