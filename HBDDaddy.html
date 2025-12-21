@@ -7,7 +7,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Dancing+Script:wght@600&family=Lato:wght@300;400&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #F9F7F2;
             --card-bg: #FFFFFF;
             --accent-gold: #D4AF37;
             --accent-pink: #E8B4B8;
@@ -21,31 +20,39 @@
             margin: 0;
             padding: 0;
             font-family: 'Lato', sans-serif;
-            background-color: var(--bg-color);
-            background-image: radial-gradient(#E8E0D5 1px, transparent 1px);
-            background-size: 20px 20px;
-            height: 100vh;
+            
+            /* --- 升級後的鮮豔背景 (Vibrant Background) --- */
+            /* 使用暖金色到充滿活力的橘紅色漸層，象徵慶祝與溫暖 */
+            background: linear-gradient(135deg, #FFC371 0%, #FF5F6D 100%);
+            
+            min-height: 100vh; /* 確保背景填滿視窗 */
             display: flex;
             justify-content: center;
             align-items: center;
-            overflow: hidden;
+            /* 允許網頁滾動，以防卡片變得比螢幕還長 */
+            overflow-y: auto; 
             color: var(--text-dark);
+            padding: 20px 0; /* 上下留一點空間 */
         }
 
         /* 卡片主體 */
         .card-container {
             position: relative;
             width: 380px;
-            height: 680px;
+            
+            /* --- 修改：高度自動適應 (Auto Height) --- */
+            min-height: 680px; /* 最小高度維持原樣 */
+            height: auto;      /* 允許隨內容長高 */
+            
             background: var(--card-bg);
             border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(74, 64, 54, 0.15);
-            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+            overflow: hidden; /* 保持圓角 */
             text-align: center;
             display: flex;
             flex-direction: column;
             padding: 20px;
-            transition: all 0.5s ease;
+            transition: all 0.3s ease;
         }
 
         /* 裝飾框線 */
@@ -82,6 +89,7 @@
             position: relative;
             width: 180px;
             height: 180px;
+            flex-shrink: 0; /* 防止照片被壓縮 */
             transition: all 0.5s ease;
         }
 
@@ -105,11 +113,9 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            /* 預設照片置中，如果不準可以改成 top 或 bottom */
             object-position: center; 
         }
         
-        /* 圖片載入失敗時的提示 */
         .img-error-msg {
             display: none;
             position: absolute;
@@ -125,12 +131,13 @@
 
         /* --- 頁面切換機制 --- */
         .stage {
-            display: none; /* 預設隱藏 */
+            display: none; 
             flex-direction: column;
             align-items: center;
             width: 100%;
             animation: fadeIn 0.8s ease;
-            flex-grow: 1;
+            flex-grow: 1; /* 填滿剩餘空間 */
+            padding-bottom: 20px; /* 底部留白 */
         }
         .stage.active { display: flex; }
 
@@ -156,16 +163,21 @@
             font-family: 'Dancing Script', cursive;
             font-size: 1.5rem;
             line-height: 1.6;
-            margin: 10px 0;
-            padding: 15px;
-            background: rgba(249, 247, 242, 0.6);
+            margin: 10px 0 30px 0; /* 增加底部邊距，避免跟按鈕太近 */
+            padding: 20px;
+            background: rgba(249, 247, 242, 0.8);
             border-radius: 10px;
-            width: 90%;
+            width: 95%; /* 加寬一點 */
             display: flex;
             align-items: center;
             justify-content: center;
+            
+            /* --- 修改：允許文字無限延伸 --- */
             min-height: 100px;
+            height: auto; 
+            
             animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            white-space: pre-wrap; /* 保留換行 */
         }
 
         @keyframes popIn {
@@ -184,8 +196,11 @@
             letter-spacing: 1px;
             border-radius: 30px;
             cursor: pointer;
-            margin-top: auto;
-            margin-bottom: 40px;
+            
+            /* 讓按鈕保持在底部，但如果有長文字，它會被推下去 */
+            margin-top: auto; 
+            margin-bottom: 20px;
+            
             transition: all 0.3s;
             z-index: 10;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
@@ -197,7 +212,6 @@
         }
 
         /* --- 遊戲元素 --- */
-        /* Game 1: Beer */
         .beer-target {
             position: absolute;
             font-size: 40px;
@@ -208,7 +222,6 @@
             filter: drop-shadow(0 4px 4px rgba(0,0,0,0.1));
         }
 
-        /* Game 2: Love Meter */
         .progress-bar-container {
             width: 180px;
             height: 8px;
@@ -232,7 +245,6 @@
             z-index: 50;
         }
 
-        /* Game 3: Candle */
         .cake-container {
             font-size: 90px;
             position: relative;
@@ -265,7 +277,7 @@
             100% { transform: translateY(-80px) scale(1.5) rotate(20deg); opacity: 0; }
         }
 
-        canvas { position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:99; }
+        canvas { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:99; }
     </style>
 </head>
 <body>
@@ -273,25 +285,20 @@
     <div class="card-container">
         <div class="border-deco"></div>
 
-        <!-- 
-           ★ 這裡設定照片 ★ 
-           我已經將檔名設定為 'IMG_5525.jpg'
-           請確保你的照片檔名真的是這個（注意大小寫，如果是 IMG_5525.JPG 也要改過來）
-        -->
+        <!-- 照片區 (IMG_5525.jpg) -->
         <div class="dog-frame-container" id="dogContainer">
             <div class="dog-frame" onclick="handleDogClick(event)">
-                <img src="IMG_5523.jpg" 
+                <img src="IMG_5525.jpg" 
                      alt="Cream Dachshund" 
                      onerror="this.style.display='none'; this.parentElement.querySelector('.img-error-msg').style.display='flex'">
                 
-                <!-- 如果照片讀取失敗，會顯示這個提示 -->
                 <div class="img-error-msg">
-                    照片未讀取<br>請確認檔名為<br>IMG_5523.jpg<br>並放在同資料夾
+                    照片未讀取<br>請確認檔名為<br>IMG_5525.jpg<br>並放在同資料夾
                 </div>
             </div>
         </div>
 
-        <!-- STAGE 0: 封面 Start Screen -->
+        <!-- STAGE 0: 封面 -->
         <div id="start-screen" class="stage active">
             <h2>Happy Birthday<br><span>to Daddy</span></h2>
             <div style="flex-grow: 1; display: flex; align-items: center; justify-content: center; flex-direction: column;">
@@ -309,11 +316,14 @@
             
             <div class="beer-target" id="beerTarget" onclick="catchBeer()">🍺</div>
             
+            <!-- 完成後顯示 (可以塞很多文字) -->
             <div id="msg1" style="display:none; width: 100%; flex-direction: column; align-items: center; height: 100%;">
                 <div class="message-box">
-                    親愛的 Daddy,<br>
-                    生日快樂！<br>
+                    親愛的 Daddy,
+                    生日快樂！
+                    
                     這是第一杯慶祝的啤酒！
+                    (這裡可以寫更多文字，卡片會自動變長喔！)
                 </div>
                 <button class="btn" onclick="nextStage(2)">Next Level &rarr;</button>
             </div>
@@ -330,8 +340,8 @@
 
             <div id="msg2" style="display:none; width: 100%; flex-direction: column; align-items: center; height: 100%;">
                 <div class="message-box">
-                    謝謝你平時這麼辛苦<br>
-                    照顧我們，<br>
+                    謝謝你平時這麼辛苦
+                    照顧我們，
                     我們最愛你了！
                 </div>
                 <button class="btn" onclick="nextStage(3)">Final Wish &rarr;</button>
@@ -350,8 +360,8 @@
 
             <div id="msg3" style="display:none; width: 100%; flex-direction: column; align-items: center; height: 100%;">
                 <div class="message-box" style="font-size: 1.6rem; color: var(--accent-gold); border: 2px dashed var(--accent-gold);">
-                    Happy Birthday<br>
-                    to the Best Daddy!<br>
+                    Happy Birthday
+                    to the Best Daddy!
                     永遠健康快樂！
                 </div>
                 <div style="font-size: 40px; margin-top: 20px; animation: bounce 2s infinite;">🎉🥂🎁</div>
@@ -373,7 +383,7 @@
         const loveBar = document.getElementById('loveBar');
 
         let blowCount = 0;
-        const blowMax = 2; // 設定為吹2次
+        const blowMax = 2; 
         const flameElem = document.getElementById('candleFlame');
 
         function startGame() {
@@ -391,6 +401,7 @@
         }
 
         function moveBeer() {
+            // 讓啤酒在卡片範圍內移動，確保不會跑出去
             const x = Math.random() * (280) + 20; 
             const y = Math.random() * (250) + 200; 
             beerElem.style.left = x + 'px';
