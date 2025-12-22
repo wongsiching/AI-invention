@@ -294,7 +294,7 @@
 
         <!-- STAGE 0: 封面 -->
         <div id="start-screen" class="stage active">
-            <h2>Happy Birthday<br><span>to Daddy</span></h2>
+            <h2>Happy Birthday<br><span>to Physics Daddy</span></h2>
             <div style="flex-grow: 1; display: flex; align-items: center; justify-content: center; flex-direction: column;">
                 <p style="color: #666; letter-spacing: 1px; line-height: 1.5; margin-bottom: 30px;">
                     這是一張需要「智慧」才能打開的卡片。<br>
@@ -333,7 +333,7 @@
 多謝你今年既努力，不過要記住工作攰既時候要多啲休息，唔好焗着自己😢
 （多啲摸mushi🐶)
 希望嚟緊你可以錫住自己，工作壓力少啲，同我打多啲波la😘
-                            
+                                    
 ㊗️
 工作順利
 萬事如意
@@ -450,12 +450,16 @@ Sandra, Yannie, Tristan
             document.getElementById('start-screen').classList.remove('active');
             document.getElementById('stage1').classList.add('active');
             currentStage = 1;
+            // 每次切換關卡時，捲動回頂部，防止跳動
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function nextStage(stageNum) {
             document.querySelector('.stage.active').classList.remove('active');
             document.getElementById('stage' + stageNum).classList.add('active');
             currentStage = stageNum;
+            // 關鍵修改：切換關卡時，自動捲動回頁面頂部
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function checkAnswer(stage, correctAnswer) {
@@ -501,6 +505,8 @@ Sandra, Yannie, Tristan
                     document.querySelector('#stage4 .physics-problem').style.display = 'none';
                     document.querySelector('#stage4 .progress-bar-container').style.display = 'none';
                     document.getElementById('msg4').style.display = 'flex';
+                    // 確保最後的訊息顯示時，畫面也回到適合閱讀的位置
+                    window.scrollTo({ top: 0, behavior: 'smooth' }); 
                     startConfetti(); 
                 }, 500);
             }
