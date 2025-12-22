@@ -362,7 +362,34 @@ Daddy
 
 Sandra
                 </div>
-                <div style="font-size: 40px; margin-top: 10px; animation: bounce 2s infinite;">🎉🥂🎁</div>
+                <!-- 這裡改成進入 Bonus Level -->
+                <button class="next-btn" onclick="nextStage(4)">Final Surprise &rarr;</button>
+            </div>
+        </div>
+
+        <!-- STAGE 4: Bonus Level (摸摸狗) -->
+        <div id="stage4" class="stage">
+            <h2>Bonus Mission</h2>
+            
+            <div class="physics-problem" style="text-align: center; border-left: none; border-top: 4px solid var(--love-pink);">
+                <strong>給狗狗一些溫暖 ❤️</strong><br><br>
+                點擊上方的狗狗照片 10 次<br>
+                來充滿愛心能量！
+            </div>
+            
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="warmthBar"></div>
+            </div>
+
+            <div id="msg4" class="message-section">
+                <h2 style="color: var(--love-pink); font-size: 2.2rem; margin-bottom: 5px;">結婚週年紀念快樂</h2>
+                <div class="message-box" style="border-color: var(--love-pink); background: #fff0f0;">
+                    爹地媽咪：
+
+                    結婚週年紀念快樂🎉希望你地繼續甜甜蜜蜜，每日錫錫，每日攬攬，每日抱抱，但最重要嘅係：每日比錢錢我地三個洗😉
+
+                    Sandra, Yannie, Tristan
+                </div>
             </div>
         </div>
     </div>
@@ -370,14 +397,20 @@ Sandra
     <canvas id="confetti-canvas"></canvas>
 
     <script>
+        let currentStage = 0;
+        let warmthCount = 0;
+        const warmthMax = 10;
+
         function startGame() {
             document.getElementById('start-screen').classList.remove('active');
             document.getElementById('stage1').classList.add('active');
+            currentStage = 1;
         }
 
         function nextStage(stageNum) {
             document.querySelector('.stage.active').classList.remove('active');
             document.getElementById('stage' + stageNum).classList.add('active');
+            currentStage = stageNum;
         }
 
         function checkAnswer(stage, correctAnswer) {
@@ -391,9 +424,7 @@ Sandra
                 const msgElem = document.getElementById('msg' + stage);
                 msgElem.style.display = 'flex';
                 
-                if (stage === 3) {
-                    startConfetti();
-                }
+                // 第三關答對後，不直接放彩帶，而是等待進入第四關
             } else {
                 // 答錯邏輯
                 inputElem.classList.add('shake');
@@ -405,6 +436,50 @@ Sandra
             }
         }
 
+        // --- Level 4: 點擊狗狗互動 ---
+        function handleDogClick(e) {
+            // 只有在第4關時才啟用
+            if (currentStage !== 4) return;
+            if (warmthCount >= warmthMax) return;
+
+            warmthCount++;
+            
+            // 更新進度條
+            const percent = (warmthCount / warmthMax) * 100;
+            document.getElementById('warmthBar').style.width = percent + '%';
+
+            // 產生愛心
+            createHeart(e.clientX, e.clientY);
+
+            // 完成任務
+            if (warmthCount >= warmthMax) {
+                // 隱藏題目與進度條，顯示最終訊息
+                setTimeout(() => {
+                    document.querySelector('#stage4 .physics-problem').style.display = 'none';
+                    document.querySelector('#stage4 .progress-bar-container').style.display = 'none';
+                    document.getElementById('msg4').style.display = 'flex';
+                    startConfetti(); // 最終觸發彩帶
+                }, 500);
+            }
+        }
+
+        function createHeart(x, y) {
+            const heart = document.createElement('div');
+            heart.classList.add('heart-particle');
+            heart.innerHTML = '❤️';
+            // 隨機一點偏移讓畫面自然
+            const offsetX = (Math.random() - 0.5) * 40;
+            heart.style.left = (x + offsetX) + 'px';
+            heart.style.top = (y - 20) + 'px';
+            document.body.appendChild(heart);
+
+            // 動畫結束後移除元素
+            setTimeout(() => {
+                heart.remove();
+            }, 1000);
+        }
+
+
         /* --- 彩帶特效 --- */
         const canvas = document.getElementById('confetti-canvas');
         const ctx = canvas.getContext('2d');
@@ -412,8 +487,8 @@ Sandra
         canvas.height = window.innerHeight;
 
         let confetti = [];
-        const confettiCount = 200;
-        const colors = ['#D4AF37', '#E8B4B8', '#FFF', '#FFD700', '#FF5F6D'];
+        const confettiCount = 300; // 增加數量慶祝週年
+        const colors = ['#D4AF37', '#E8B4B8', '#FFF', '#FFD700', '#FF5F6D', '#E91E63'];
 
         function initConfetti() {
             for (let i = 0; i < confettiCount; i++) {
