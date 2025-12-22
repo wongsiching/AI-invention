@@ -12,6 +12,7 @@
             --text-dark: #4A4036;
             --success-green: #4CAF50;
             --error-red: #f44336;
+            --love-pink: #FF6B6B;
         }
 
         * { box-sizing: border-box; }
@@ -74,6 +75,7 @@
             width: 180px;
             height: 180px;
             flex-shrink: 0;
+            z-index: 10; /* 提高層級確保可點擊 */
         }
 
         .dog-frame {
@@ -86,6 +88,13 @@
             background-color: #F3E5AB;
             position: relative;
             z-index: 2;
+            cursor: pointer; /* 讓鼠標變成手型，提示可點擊 */
+            transition: transform 0.1s;
+        }
+        
+        /* 點擊時的縮放效果 */
+        .dog-frame:active, .dog-frame.clicked {
+            transform: scale(0.95);
         }
 
         .dog-frame img {
@@ -200,7 +209,7 @@
 
         .message-box {
             font-family: 'Dancing Script', cursive;
-            font-size: 1rem; /* 已修改：調整為與介紹文字一致的大小 */
+            font-size: 1rem; 
             line-height: 1.6;
             margin: 10px 0 20px 0;
             padding: 20px;
@@ -211,7 +220,7 @@
             min-height: 100px;
             height: auto; 
             white-space: pre-wrap;
-            text-align: left; /* 已修改：靠左對齊 */
+            text-align: left; 
         }
 
         .next-btn {
@@ -227,8 +236,37 @@
         }
         .next-btn:hover { transform: scale(1.05); }
 
+        /* --- 新增：愛心與進度條樣式 (Level 4) --- */
+        .progress-bar-container {
+            width: 80%;
+            height: 12px;
+            background: #eee;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #ff9a9e 0%, #ff6b6b 100%);
+            transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .heart-particle {
+            position: absolute;
+            color: var(--love-pink);
+            font-size: 28px;
+            pointer-events: none;
+            animation: floatUp 1s forwards;
+            z-index: 999; /* 確保愛心在最上層 */
+        }
+
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes popIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); }
+            100% { opacity: 0; transform: translateY(-60px) scale(1.5) rotate(20deg); }
+        }
 
         canvas { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:99; }
         
@@ -242,13 +280,15 @@
     <div class="card-container">
         <div class="border-deco"></div>
 
-        <!-- 照片區 (IMG_5525.jpg) -->
+        <!-- 照片區 (已更新為 img_5523.jpg) -->
         <div class="dog-frame-container">
-            <div class="dog-frame">
-                <img src="IMG_5523.jpg" 
+            <!-- 增加 onclick 事件，用於 Level 4 -->
+            <div class="dog-frame" id="dogFrame" onclick="handleDogClick(event)">
+                <!-- 這裡改成 img_5523.jpg -->
+                <img src="img_5523.jpg" 
                      alt="Birthday Dachshund" 
                      onerror="this.style.display='none'; this.parentElement.querySelector('.img-error-msg').style.display='flex'">
-                <div class="img-error-msg">請確認 IMG_5525.jpg<br>已放入資料夾</div>
+                <div class="img-error-msg">請確認 img_5523.jpg<br>已放入資料夾</div>
             </div>
         </div>
 
@@ -284,6 +324,7 @@
             <div id="msg1" class="message-section">
                 <div class="message-box">
                     答對了！(<span class="math-var">v</span> = <span class="math-var">u</span> + <span class="math-var">at</span>)
+
 親愛的爸比
 
 ！生日快樂！🥳一年時間就快過，知道你今年嘅壓力都幾大吓，都係同往年一樣要車出車入，喺學校又要俾好多心機，又要撐住頭家，其實真心唔容易
@@ -298,6 +339,7 @@
 萬事如意
 
 梓謙
+
                 </div>
                 <button class="next-btn" onclick="nextStage(2)">Next Level &rarr;</button>
             </div>
@@ -321,10 +363,13 @@
             <div id="msg2" class="message-section">
                 <div class="message-box">
                     Correct! (<span class="math-var">F</span><sub>net</sub> = <span class="math-var">ma</span>)
+
 親愛的爸爸：
 
 生日快樂🎊🎂！！！！今年嘅生日好唔同，竟然係喺旅行嘅途中慶祝😆今次重慶之旅真係辛苦您了🥺我都唔識點搵導遊但你好快就搞好曬啲嘢～辛苦了
+
 雖然已經講左好多次，但係都係要繼續講～多謝您成日車出車入，我知道我成日都遊魂咁款，唔知幾點要去到邊度表演，又或者成日都要您等好耐🥸但好多謝您每次都繼續接我忍我💁🏻‍♀️嘻嘻，新嘅一年希望你可以所有嘢都順順利利，希望學校唔好咁多麻煩事要你處理啦🤣其他麻煩事就等我幫你用念力趕走佢🙂‍↕️
+
 生日大大大快樂💕✨
 
 Yannie
@@ -356,12 +401,12 @@ Yannie
 Daddy
 
 生日快樂～🎊🎂
-好開心今次同你慶祝嘅生日係喺旅行中度過，感覺好新奇！雖然年年都好似係講啲差吾多嘅野，但今次應該會唔同啲了 
+好開心今次同你慶祝嘅生日係喺旅行中度過，感覺好新奇！雖然年年都好似係講啲差吾多嘅野，但今次應該會唔同啲了~
 自從入左職場之後，尤其今年，深深感受到你喺我身上投放過嘅時間同心機，好多你對我嘅叮嚀、建議，原來真係對我起了好大作用，好似係呢半年特別有感覺，好希望唔會令兩老失望，所以真係好想好想做好自己嘅角色（雖然喺屋企都係做依賴你地嘅女兒為主啦哈哈）不過我真係努力嘗試中，亦開始鍾意同你地講我嘅心路歷程，比你地知道我嘅目標同每日發生嘅小事。謝謝您一直都在，一直在standby，很不容易喔，尤其自己都做老師之後，再望住你呢個巨人，要你翻屋企之後仲要聽我講咁多要你花心機嘅事，我都好奇你係點樣唔忍住唔爆我的hahaha 希望你繼續身體健康，下個旅行到我plan，帶你地去享福😘
 雖然你成日話Mushi臭，不過佢同我一樣咁崇拜你同愛你喔hehe
 
 Sandra
-                                </div>
+                </div>
                 <!-- 進入 Bonus Level -->
                 <button class="next-btn" onclick="nextStage(4)">Final Surprise &rarr;</button>
             </div>
@@ -384,11 +429,11 @@ Sandra
             <div id="msg4" class="message-section">
                 <h2 style="color: var(--love-pink); font-size: 2.2rem; margin-bottom: 5px;">結婚週年紀念快樂</h2>
                 <div class="message-box" style="border-color: var(--love-pink); background: #fff0f0;">
-                    爹地媽咪：
+爹地媽咪：
 
-                    結婚週年紀念快樂🎉希望你地繼續甜甜蜜蜜，每日錫錫，每日攬攬，每日抱抱，但最重要嘅係：每日比錢錢我地三個洗😉
+結婚週年紀念快樂🎉希望你地繼續甜甜蜜蜜，每日錫錫，每日攬攬，每日抱抱，但最重要嘅係：每日比錢錢我地三個洗😉
 
-                    Sandra, Yannie, Tristan
+Sandra, Yannie, Tristan
                 </div>
             </div>
         </div>
