@@ -362,7 +362,7 @@ Daddy
 
 Sandra
                 </div>
-                <!-- 這裡改成進入 Bonus Level -->
+                <!-- 進入 Bonus Level -->
                 <button class="next-btn" onclick="nextStage(4)">Final Surprise &rarr;</button>
             </div>
         </div>
@@ -418,15 +418,9 @@ Sandra
             const userVal = parseFloat(inputElem.value);
             
             if (userVal === correctAnswer) {
-                // 答對邏輯
                 document.getElementById('input-group-' + stage).style.display = 'none';
-                
-                const msgElem = document.getElementById('msg' + stage);
-                msgElem.style.display = 'flex';
-                
-                // 第三關答對後，不直接放彩帶，而是等待進入第四關
+                document.getElementById('msg' + stage).style.display = 'flex';
             } else {
-                // 答錯邏輯
                 inputElem.classList.add('shake');
                 inputElem.style.color = 'red';
                 setTimeout(() => {
@@ -444,6 +438,11 @@ Sandra
 
             warmthCount++;
             
+            // 讓照片縮放一下 (Visual Feedback)
+            const dogFrame = document.getElementById('dogFrame');
+            dogFrame.classList.add('clicked');
+            setTimeout(() => dogFrame.classList.remove('clicked'), 100);
+
             // 更新進度條
             const percent = (warmthCount / warmthMax) * 100;
             document.getElementById('warmthBar').style.width = percent + '%';
@@ -453,12 +452,11 @@ Sandra
 
             // 完成任務
             if (warmthCount >= warmthMax) {
-                // 隱藏題目與進度條，顯示最終訊息
                 setTimeout(() => {
                     document.querySelector('#stage4 .physics-problem').style.display = 'none';
                     document.querySelector('#stage4 .progress-bar-container').style.display = 'none';
                     document.getElementById('msg4').style.display = 'flex';
-                    startConfetti(); // 最終觸發彩帶
+                    startConfetti(); 
                 }, 500);
             }
         }
@@ -467,13 +465,17 @@ Sandra
             const heart = document.createElement('div');
             heart.classList.add('heart-particle');
             heart.innerHTML = '❤️';
-            // 隨機一點偏移讓畫面自然
+            
+            // 修正：計算 Scroll 偏移量，確保愛心在正確位置
+            const scrollX = window.scrollX || window.pageXOffset;
+            const scrollY = window.scrollY || window.pageYOffset;
+            
             const offsetX = (Math.random() - 0.5) * 40;
-            heart.style.left = (x + offsetX) + 'px';
-            heart.style.top = (y - 20) + 'px';
+            heart.style.left = (x + offsetX + scrollX) + 'px';
+            heart.style.top = (y - 40 + scrollY) + 'px'; // 稍微往上一點
+            
             document.body.appendChild(heart);
 
-            // 動畫結束後移除元素
             setTimeout(() => {
                 heart.remove();
             }, 1000);
@@ -487,7 +489,7 @@ Sandra
         canvas.height = window.innerHeight;
 
         let confetti = [];
-        const confettiCount = 300; // 增加數量慶祝週年
+        const confettiCount = 300; 
         const colors = ['#D4AF37', '#E8B4B8', '#FFF', '#FFD700', '#FF5F6D', '#E91E63'];
 
         function initConfetti() {
