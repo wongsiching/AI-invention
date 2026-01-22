@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Simulation: Seesaw Equilibrium</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body {
+            background-color: #f8fafc;
+            touch-action: none;
+            overflow-x: hidden;
+            font-family: 'Inter', system-ui, sans-serif;
+            user-select: none;
+        }
+        .seesaw-beam {
+            transition: transform 0.1s linear;
+            transform-origin: center center;
+            pointer-events: none; /* Allows clicks to pass through to background/trash */
+        }
+        .ruler-mark {
+            position: absolute;
+            bottom: 0;
+            width: 1px;
+            height: 10px;
+            background: rgba(0,0,0,0.3);
+        }
+        .draggable-person {
+            cursor: grab;
+            touch-action: none;
+            pointer-events: auto; /* CRITICAL: Enables dragging */
+            will-change: left;
+            z-index: 50;
+        }
+        .draggable-person:active {
+            cursor: grabbing;
+            filter: brightness(1.1) drop-shadow(0 4px 6px rgba(0,0,0,0.2));
+            scale: 1.1;
+            transition: scale 0.1s;
+        }
+        #canvas-container {
+            position: relative;
+            height: 600px;
+            width: 100%;
+            background: linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 100%);
+            border-radius: 24px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            border: 1px solid #bae6fd;
+        }
+        .math-container {
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .trash-zone {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(239, 68, 68, 0.1);
+            border: 2px dashed #ef4444;
+            color: #ef4444;
+            opacity: 0.5;
+            transition: all 0.3s;
+            z-index: 40;
+        }
+        .trash-zone.active {
+            opacity: 1;
+            background: rgba(239, 68, 68, 0.2);
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-[1600px] mx-auto">
+        <header class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <h1 class="text-3xl font-black text-slate-900 tracking-tight">Seesaw Physics Lab</h1>
+                <p class="text-slate-500 font-medium">Principle of Moments: \(\sum M_{pivot} = 0\)</p>
+            </div>
+            <div id="balance-status" class="px-8 py-2.5 rounded-2xl font-bold text-white bg-red-500 shadow-xl transition-colors duration-300 flex items-center gap-2">
+                <span class="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                UNBALANCED
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <!-- Left Controls -->
+            <div class="lg:col-span-1 space-y-4">
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
+                    <h2 class="font-bold text-lg mb-5 text-slate-800">Experimental Constants</h2>
+                    
+                    <div class="mb-6">
+                        <label class="block text-sm font-bold text-slate-600 mb-2">Beam Mass: <span id="beamMassVal" class="text-blue-600">10 kg</span></label>
+                        <input type="range" id="beamMassInput" min="0" max="100" value="10" class="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                    </div>
+
+                    <div class="space-y-3 mb-6">
+                        <label class="flex items-center p-3 rounded-2xl bg-slate-50 border border-slate-100 hover:border-blue-200 cursor-pointer transition">
+                            <input type="checkbox" id="showForces" class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500" checked>
+                            <span class="ml-3 text-sm font-bold text-slate-700">Show Force Vectors</span>
+                        </label>
+                    </div>
+
+                    <button id="resetBtn" class="w-full bg-slate-900 hover:bg-black text-white font-bold py-4 rounded-2xl transition shadow-lg active:scale-95">
+                        Clear Workbench
+                    </button>
+                </div>
+
+                <!-- Fixed Instructions -->
+                <div class="bg-blue-600 p-6 rounded-3xl text-white shadow-xl relative overflow-hidden">
+                    <div class="relative z-10">
+                        <h2 class="font-bold text-lg mb-3">Quick Guide</h2>
+                        <div class="text-sm space-y-4 leading-relaxed font-medium">
+                            <p>1. <span class="bg-white/20 px-2 py-0.5 rounded text-white">Tap</span> icons to add people.</p>
+                            <p>2. <span class="bg-white/20 px-2 py-0.5 rounded text-white">Drag</span> people along the beam.</p>
+                            <p>3. Drag to the <span class="text-red-200 font-bold">Trash Bin</span> to remove.</p>
+                            <div class="bg-blue-800/40 p-3 rounded-xl font-mono text-center text-xs mt-2 border border-blue-400/30">
+                                \(M = F \times d\)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Simulation Area -->
+            <div class="lg:col-span-3">
+                <div id="canvas-container" class="flex flex-col items-center justify-end pb-12 select-none">
+                    
+                    <!-- Trash Zone -->
+                    <div id="trash-zone" class="trash-zone">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </div>
+
+                    <!-- Spawn Buttons -->
+                    <div id="object-source" class="absolute top-6 left-6 flex gap-3 z-40">
+                        <button id="spawn-60" class="bg-white border-2 border-orange-200 p-2 rounded-2xl text-center w-20 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all active:scale-95 group" data-mass="60">
+                            <svg viewBox="0 0 24 24" class="h-8 w-8 mx-auto text-orange-500 mb-1"><path fill="currentColor" d="M12,2A2,2 0 0,1 14,4A2,2 0 0,1 12,6A2,2 0 0,1 10,4A2,2 0 0,1 12,2M10.5,7H13.5A2,2 0 0,1 15.5,9V14.5H14V22H10V14.5H8.5V9A2,2 0 0,1 10.5,7Z"/></svg>
+                            <span class="text-[10px] font-black text-slate-600 group-hover:text-orange-600">60 kg</span>
+                        </button>
+                        <button id="spawn-40" class="bg-white border-2 border-emerald-200 p-2 rounded-2xl text-center w-20 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all active:scale-95 group" data-mass="40">
+                            <svg viewBox="0 0 24 24" class="h-8 w-8 mx-auto text-emerald-500 mb-1"><path fill="currentColor" d="M12,2A2,2 0 0,1 14,4A2,2 0 0,1 12,6A2,2 0 0,1 10,4A2,2 0 0,1 12,2M10.5,7H13.5A2,2 0 0,1 15.5,9V14.5H14V22H10V14.5H8.5V9A2,2 0 0,1 10.5,7Z"/></svg>
+                            <span class="text-[10px] font-black text-slate-600 group-hover:text-emerald-600">40 kg</span>
+                        </button>
+                        <button id="spawn-80" class="bg-white border-2 border-purple-200 p-2 rounded-2xl text-center w-20 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all active:scale-95 group" data-mass="80">
+                            <svg viewBox="0 0 24 24" class="h-8 w-8 mx-auto text-purple-500 mb-1"><path fill="currentColor" d="M12,2A2,2 0 0,1 14,4A2,2 0 0,1 12,6A2,2 0 0,1 10,4A2,2 0 0,1 12,2M10.5,7H13.5A2,2 0 0,1 15.5,9V14.5H14V22H10V14.5H8.5V9A2,2 0 0,1 10.5,7Z"/></svg>
+                            <span class="text-[10px] font-black text-slate-600 group-hover:text-purple-600">80 kg</span>
+                        </button>
+                    </div>
+
+                    <!-- Environment Visuals -->
+                    <div id="sim-view" class="relative w-full h-full flex items-center justify-center">
+                        <!-- 1. Floor (Base Level) -->
+                        <div class="absolute bottom-0 w-full h-12 bg-slate-300 border-t border-slate-400"></div>
+                        
+                        <!-- 2. Triangle Fulcrum (Stand) -->
+                        <!-- Sits on floor (bottom-12). Height 80px. -->
+                        <!-- Top Tip at 12(48px) + 80px = 128px from container bottom -->
+                        <!-- This lifts the pivot off the ground as requested -->
+                        <div class="absolute bottom-12 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[40px] border-l-transparent border-r-[40px] border-r-transparent border-b-[80px] border-b-slate-700 z-0"></div>
+
+                        <!-- 3. Pivot Point (Visual Joint) -->
+                        <!-- Center Y Target: 128px (Exactly at Stand Tip) -->
+                        <!-- Size 16px (h-4). Bottom = 128 - 8 = 120px -->
+                        <div class="absolute bottom-[120px] left-1/2 -translate-x-1/2 w-4 h-4 bg-yellow-400 rounded-full z-20 border-2 border-slate-900 shadow-sm flex items-center justify-center">
+                            <div class="w-1 h-1 bg-yellow-600 rounded-full opacity-50"></div>
+                        </div>
+
+                        <!-- 4. Beam (Plank) -->
+                        <!-- Target Center Y: 128px -->
+                        <!-- Height: 24px (h-6). -->
+                        <!-- Bottom Position = 128 - 12 = 116px -->
+                        <div id="beam" class="seesaw-beam relative w-[90%] h-6 bg-amber-800 rounded-full z-10 flex items-center shadow-md border border-amber-900" style="bottom: 116px;">
+                            <!-- Inner texture/ruler -->
+                            <div class="relative w-full h-full pointer-events-none">
+                                <div id="ruler-labels" class="absolute left-0 w-full flex justify-between px-4 -top-8 text-[11px] font-bold text-slate-500">
+                                    <span>-4m</span><span>-3m</span><span>-2m</span><span>-1m</span><span class="text-slate-800">0</span><span>1m</span><span>2m</span><span>3m</span><span>4m</span>
+                                </div>
+                                <div id="ruler" class="w-full h-full flex justify-between items-end px-4"></div>
+                            </div>
+                            
+                            <!-- Container for people -->
+                            <div id="beam-objects" class="absolute top-0 left-0 w-full h-full pointer-events-none"></div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Analysis Data -->
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                        <h3 class="font-bold text-slate-700 uppercase text-xs tracking-wider mb-2 border-b pb-2">Anticlockwise (Left)</h3>
+                        <div id="left-calc" class="font-mono text-sm text-red-600 bg-red-50 p-3 rounded-lg min-h-[50px]">0 Nm</div>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                        <h3 class="font-bold text-slate-700 uppercase text-xs tracking-wider mb-2 border-b pb-2">Clockwise (Right)</h3>
+                        <div id="right-calc" class="font-mono text-sm text-emerald-600 bg-emerald-50 p-3 rounded-lg min-h-[50px]">0 Nm</div>
+                    </div>
+                    <div class="bg-slate-900 text-white p-6 rounded-2xl shadow-xl col-span-full flex flex-col md:flex-row justify-between items-center gap-6">
+                        <div>
+                            <span class="text-slate-400 text-xs uppercase tracking-widest block mb-1">Net Moment (\(\tau_{net}\))</span>
+                            <span id="net-moment" class="text-3xl font-black font-mono">0.00 Nm</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-slate-400 text-xs uppercase tracking-widest block mb-1">Reaction Force (\(R\))</span>
+                            <span id="reaction-force" class="text-3xl font-black font-mono text-yellow-400">0.00 N</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const beam = document.getElementById('beam');
+        const beamObjects = document.getElementById('beam-objects');
+        const beamMassInput = document.getElementById('beamMassInput');
+        const beamMassVal = document.getElementById('beamMassVal');
+        const showForcesToggle = document.getElementById('showForces');
+        const leftCalc = document.getElementById('left-calc');
+        const rightCalc = document.getElementById('right-calc');
+        const netMomentVal = document.getElementById('net-moment');
+        const reactionForceVal = document.getElementById('reaction-force');
+        const resetBtn = document.getElementById('resetBtn');
+        const balanceStatus = document.getElementById('balance-status');
+        const trashZone = document.getElementById('trash-zone');
+
+        const g = 9.81;
+        let placedObjects = [];
+        let beamMass = 10;
+        let isDragging = false; 
+
+        function createRuler() {
+            const ruler = document.getElementById('ruler');
+            ruler.innerHTML = '';
+            for (let i = 0; i <= 40; i++) {
+                const mark = document.createElement('div');
+                mark.className = 'ruler-mark';
+                if (i % 10 === 0) {
+                    mark.style.height = '14px';
+                    mark.style.backgroundColor = 'rgba(0,0,0,0.6)';
+                } else if (i % 5 === 0) {
+                    mark.style.height = '10px';
+                }
+                ruler.appendChild(mark);
+            }
+        }
+
+        function calculatePhysics() {
+            let totalMoment = 0;
+            let leftFormula = [];
+            let rightFormula = [];
+            let totalMass = beamMass;
+
+            placedObjects.forEach(obj => {
+                const distFromCenter = obj.offset * 4; 
+                const weight = obj.mass * g;
+                const moment = weight * distFromCenter; 
+                
+                totalMoment += moment;
+                totalMass += obj.mass;
+
+                const label = `(${obj.mass} × ${g} × ${Math.abs(distFromCenter).toFixed(2)})`;
+                if (distFromCenter < 0) leftFormula.push(label);
+                else if (distFromCenter > 0) rightFormula.push(label);
+            });
+
+            leftCalc.innerHTML = leftFormula.length ? leftFormula.join(' + ') + ' Nm' : '0 Nm';
+            rightCalc.innerHTML = rightFormula.length ? rightFormula.join(' + ') + ' Nm' : '0 Nm';
+            netMomentVal.innerText = `${Math.abs(totalMoment).toFixed(2)} Nm`; 
+            reactionForceVal.innerText = `${(totalMass * g).toFixed(2)} N`;
+
+            const threshold = 15; 
+            if (Math.abs(totalMoment) < threshold) {
+                beam.style.transform = `rotate(0deg)`;
+                balanceStatus.innerText = "BALANCED";
+                balanceStatus.className = "px-8 py-2.5 rounded-2xl font-bold text-white bg-emerald-500 shadow-xl transition-colors duration-300 flex items-center gap-2";
+            } else {
+                const tilt = Math.max(-12, Math.min(12, (totalMoment / 1000) * 12));
+                beam.style.transform = `rotate(${tilt}deg)`;
+                balanceStatus.innerText = "UNBALANCED";
+                balanceStatus.className = "px-8 py-2.5 rounded-2xl font-bold text-white bg-red-500 shadow-xl transition-colors duration-300 flex items-center gap-2";
+            }
+
+            updateForceVectors();
+        }
+
+        function updateForceVectors() {
+            const visible = showForcesToggle.checked;
+            document.querySelectorAll('.force-arrow').forEach(a => {
+                a.style.display = visible ? 'flex' : 'none';
+            });
+        }
+
+        function spawnObject(mass) {
+            const objEl = document.createElement('div');
+            objEl.className = 'absolute draggable-person flex flex-col items-center';
+            objEl.style.width = '60px';
+            objEl.style.bottom = '10px'; 
+            
+            const colorClass = mass === 60 ? 'text-orange-500' : (mass === 40 ? 'text-emerald-500' : 'text-purple-500');
+            
+            objEl.innerHTML = `
+                <div class="force-arrow absolute top-full flex flex-col items-center w-full pointer-events-none transition-opacity duration-200">
+                    <div class="w-1 bg-blue-500 h-10 relative">
+                         <div class="absolute bottom-0 -left-[6px] w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[12px] border-t-blue-500"></div>
+                    </div>
+                    <span class="text-[10px] font-bold text-blue-600 mt-2 whitespace-nowrap bg-white/90 px-1 rounded shadow-sm">${(mass*g).toFixed(1)}N</span>
+                </div>
+                <svg viewBox="0 0 24 24" class="h-14 w-14 ${colorClass} drop-shadow-md pointer-events-none"><path fill="currentColor" d="M12,2A2,2 0 0,1 14,4A2,2 0 0,1 12,6A2,2 0 0,1 10,4A2,2 0 0,1 12,2M10.5,7H13.5A2,2 0 0,1 15.5,9V14.5H14V22H10V14.5H8.5V9A2,2 0 0,1 10.5,7Z"/></svg>
+                <div class="bg-slate-800 text-white px-2 py-0.5 rounded text-[9px] font-black mt-[-4px] shadow-sm pointer-events-none">${mass}kg</div>
+            `;
+
+            const objData = {
+                el: objEl,
+                mass: mass,
+                offset: (Math.random() * 0.4) - 0.2
+            };
+
+            const updatePos = (clientX) => {
+                const beamRect = beam.getBoundingClientRect();
+                const beamCenterX = beamRect.left + beamRect.width / 2;
+                const beamFullWidth = beam.offsetWidth; 
+                
+                const dx = clientX - beamCenterX;
+                let percent = dx / beamFullWidth;
+                percent = Math.max(-0.48, Math.min(0.48, percent));
+                
+                objData.offset = percent * 2; 
+                objEl.style.left = `calc(${50 + percent * 100}% - 30px)`;
+                calculatePhysics();
+            };
+
+            const startDrag = (e) => {
+                e.preventDefault(); 
+                e.stopPropagation(); 
+                
+                isDragging = true;
+                trashZone.classList.add('active'); 
+                
+                const onDrag = (ev) => {
+                    const cx = ev.type.includes('touch') ? ev.touches[0].clientX : ev.clientX;
+                    const cy = ev.type.includes('touch') ? ev.touches[0].clientY : ev.clientY;
+                    
+                    updatePos(cx);
+                    
+                    const trashRect = trashZone.getBoundingClientRect();
+                    if (cx >= trashRect.left && cx <= trashRect.right &&
+                        cy >= trashRect.top && cy <= trashRect.bottom) {
+                        trashZone.style.transform = "scale(1.2)";
+                        trashZone.style.background = "rgba(239, 68, 68, 0.4)";
+                    } else {
+                        trashZone.style.transform = "scale(1)";
+                        trashZone.style.background = "rgba(239, 68, 68, 0.1)";
+                    }
+                };
+
+                const stopDrag = (ev) => {
+                    isDragging = false;
+                    trashZone.classList.remove('active');
+                    trashZone.style.transform = "";
+                    trashZone.style.background = "";
+                    
+                    const cx = ev.type.includes('touch') ? ev.changedTouches[0].clientX : ev.clientX;
+                    const cy = ev.type.includes('touch') ? ev.changedTouches[0].clientY : ev.clientY;
+                    const trashRect = trashZone.getBoundingClientRect();
+                    
+                    if (cx >= trashRect.left && cx <= trashRect.right &&
+                        cy >= trashRect.top && cy <= trashRect.bottom) {
+                        objEl.remove();
+                        placedObjects = placedObjects.filter(o => o !== objData);
+                        calculatePhysics();
+                    }
+
+                    window.removeEventListener('mousemove', onDrag);
+                    window.removeEventListener('mouseup', stopDrag);
+                    window.removeEventListener('touchmove', onDrag);
+                    window.removeEventListener('touchend', stopDrag);
+                };
+
+                window.addEventListener('mousemove', onDrag);
+                window.addEventListener('mouseup', stopDrag);
+                window.addEventListener('touchmove', onDrag, { passive: false });
+                window.addEventListener('touchend', stopDrag);
+            };
+
+            objEl.addEventListener('mousedown', startDrag);
+            objEl.addEventListener('touchstart', startDrag, { passive: false });
+
+            beamObjects.appendChild(objEl);
+            placedObjects.push(objData);
+            
+            objEl.style.left = `calc(${50 + (objData.offset/2) * 100}% - 30px)`;
+            calculatePhysics();
+        }
+
+        document.getElementById('spawn-60').addEventListener('click', () => spawnObject(60));
+        document.getElementById('spawn-40').addEventListener('click', () => spawnObject(40));
+        document.getElementById('spawn-80').addEventListener('click', () => spawnObject(80));
+
+        beamMassInput.addEventListener('input', (e) => {
+            beamMass = parseInt(e.target.value);
+            beamMassVal.innerText = `${beamMass} kg`;
+            calculatePhysics();
+        });
+
+        showForcesToggle.addEventListener('change', calculatePhysics);
+
+        resetBtn.addEventListener('click', () => {
+            beamObjects.innerHTML = '';
+            placedObjects = [];
+            beamMass = 10;
+            beamMassInput.value = 10;
+            beamMassVal.innerText = '10 kg';
+            calculatePhysics();
+        });
+
+        window.onload = () => {
+            createRuler();
+            calculatePhysics();
+        };
+    </script>
+</body>
+</html>
