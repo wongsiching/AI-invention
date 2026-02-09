@@ -266,14 +266,14 @@
                             <div class="text-[10px] text-blue-400 font-bold uppercase tracking-wide mb-2 flex justify-between">Blue Car</div>
                             <div class="space-y-2">
                                 <div><label class="text-[9px] text-gray-500 uppercase font-bold">Mass (kg)</label><input type="number" id="sim_m1" value="1000" class="bg-gray-900 rounded px-2 py-1 text-sm border border-gray-700"></div>
-                                <div><label class="text-[9px] text-gray-500 uppercase font-bold">Velocity (m/s)</label><input type="number" id="sim_v1" value="20" class="bg-gray-900 rounded px-2 py-1 text-sm border border-gray-700"></div>
+                                <div><label class="text-[9px] text-gray-500 uppercase font-bold">Velocity (m/s)</label><input type="number" id="sim_u1" value="20" class="bg-gray-900 rounded px-2 py-1 text-sm border border-gray-700"></div>
                             </div>
                         </div>
                         <div class="p-3 bg-gray-800/50 rounded-xl border border-red-500/20">
                             <div class="text-[10px] text-red-400 font-bold uppercase tracking-wide mb-2 flex justify-between">Red Truck</div>
                             <div class="space-y-2">
                                 <div><label class="text-[9px] text-gray-500 uppercase font-bold">Mass (kg)</label><input type="number" id="sim_m2" value="1500" class="bg-gray-900 rounded px-2 py-1 text-sm border border-gray-700"></div>
-                                <div><label class="text-[9px] text-gray-500 uppercase font-bold">Velocity (m/s)</label><input type="number" id="sim_v2" value="0" class="bg-gray-900 rounded px-2 py-1 text-sm border border-gray-700"></div>
+                                <div><label class="text-[9px] text-gray-500 uppercase font-bold">Velocity (m/s)</label><input type="number" id="sim_u2" value="0" class="bg-gray-900 rounded px-2 py-1 text-sm border border-gray-700"></div>
                             </div>
                         </div>
                     </div>
@@ -283,11 +283,25 @@
                     <h2 class="text-xs text-orange-400 font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
                         <i class="fa-solid fa-crosshairs"></i> 3. Prediction
                     </h2>
-                    <div class="input-group border-orange-500/30 bg-orange-900/10">
-                        <label class="block text-[10px] text-orange-300 font-bold uppercase mb-1">Target Final Velocity (v1)</label>
-                        <div class="flex items-baseline">
-                            <input type="number" id="sim_v1_target" value="8" class="text-xl text-orange-400 font-bold">
-                            <span class="text-xs text-gray-500 ml-1">m/s</span>
+                    <p class="text-[9px] text-gray-400 mb-3 leading-tight">Enter your predicted final velocity for <b>each</b> vehicle. The report will verify if Momentum is Conserved.</p>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <!-- Blue Final Input -->
+                        <div class="input-group border-blue-500/30 bg-blue-900/10">
+                            <label class="block text-[9px] text-blue-300 font-bold uppercase mb-1">Blue Final (v1)</label>
+                            <div class="flex items-baseline">
+                                <input type="number" id="sim_v1_target" value="8" class="text-xl text-blue-400 font-bold">
+                                <span class="text-xs text-gray-500 ml-1">m/s</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Red Final Input -->
+                        <div class="input-group border-red-500/30 bg-red-900/10">
+                            <label class="block text-[9px] text-red-300 font-bold uppercase mb-1">Red Final (v2)</label>
+                            <div class="flex items-baseline">
+                                <input type="number" id="sim_v2_target" value="8" class="text-xl text-red-400 font-bold">
+                                <span class="text-xs text-gray-500 ml-1">m/s</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -502,483 +516,767 @@
                 <div class="text-xl text-gray-400 mb-8 uppercase tracking-widest">Final Score: <span id="finalScore" class="text-white font-bold">0</span></div>
                 <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 max-w-md w-full mb-8">
                     <div class="text-xs text-gray-500 uppercase tracking-widest mb-2">Performance Rank</div>
-                    <div id="finalRank" class="text-3xl text-purple-400 font-bold">Beginner Physics</div>
+                    <div id="finalRank" class="text-2xl font-bold text-purple-400">Physics Novice</div>
                 </div>
-                <button onclick="startGame()" class="px-10 py-4 bg-white text-black font-bold uppercase tracking-widest rounded hover:bg-gray-200 transition">Play Again</button>
-                <button onclick="setMode('sim')" class="mt-4 text-gray-500 hover:text-white text-sm uppercase tracking-wider">Return to Lab</button>
+                <div class="flex gap-4">
+                    <button onclick="setMode('sim')" class="px-8 py-3 border border-gray-600 rounded text-gray-300 hover:text-white hover:border-gray-400 uppercase tracking-wider text-xs font-bold">Return to Lab</button>
+                    <button onclick="startGame()" class="px-8 py-3 bg-purple-600 hover:bg-purple-700 rounded text-white uppercase tracking-wider text-xs font-bold shadow-lg shadow-purple-900/50">Play Again</button>
+                </div>
             </div>
         </div>
 
     </main>
 
-    <script>
-        // --- Game Engine ---
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const wrapper = document.getElementById('canvasWrapper');
-
-        const state = {
-            mode: 'sim', 
-            // Physics Data
-            m1: 1000, u1: 20, v1: 0, m2: 1500, u2: 0, v2: 0,
-            v1_target: 8, unknown: 'v2',
-            // Visuals
-            x1: 0, x2: 0, currV1: 0, currV2: 0, scale: 20, offsetY: 0, 
-            isPlaying: false, hasCollided: false, shakeTime: 0, particles: []
-        };
-
-        // --- QUIZ STATE ---
-        let quizState = {
-            active: false,
-            score: 0,
-            qIndex: 0,
-            timeLeft: 60,
-            timerId: null,
-            currentQ: null
-        };
-
-        let animId;
-        let lastTime = 0;
-
-        function init() {
-            window.addEventListener('resize', resize);
-            resize();
-            setMode('sim');
-            setScenario('chasing');
-        }
-
-        function resize() {
-            canvas.width = wrapper.clientWidth;
-            canvas.height = wrapper.clientHeight;
-            state.offsetY = canvas.height * 0.65;
-            draw();
-        }
-
-        // --- Mode Switching ---
-        function setMode(mode) {
-            state.mode = mode;
-            resetSim();
-            clearInterval(quizState.timerId); // Stop any game timers
-
-            // UI Toggles
-            document.getElementById('panel_sim').className = mode === 'sim' ? 'block animate-fade-in' : 'hidden';
-            document.getElementById('panel_calc').className = mode === 'calc' ? 'block animate-fade-in' : 'hidden';
-            document.getElementById('panel_game').className = mode === 'game' ? 'block animate-fade-in' : 'hidden';
-            
-            // Buttons
-            document.getElementById('btn_sim').className = `mode-btn ${mode === 'sim' ? 'sim-active' : 'inactive'} group`;
-            document.getElementById('btn_calc').className = `mode-btn ${mode === 'calc' ? 'calc-active' : 'inactive'} group`;
-            document.getElementById('btn_game').className = `mode-btn ${mode === 'game' ? 'game-active' : 'inactive'} group`;
-
-            // HUD Visibility
-            const isGame = mode === 'game';
-            document.getElementById('simulationHUD').style.display = isGame ? 'none' : 'flex';
-            document.getElementById('gameInterface').className = 'hidden'; // Hide initially, show via startGame
-            document.getElementById('gameCanvas').style.opacity = isGame ? '0.3' : '1';
-
-            if(mode === 'calc') { updateSolverMode(); solve(); }
-        }
-
-        // --- QUIZ LOGIC ---
-        function startGame() {
-            quizState = { active: true, score: 0, qIndex: 0, timeLeft: 60, timerId: null, currentQ: null };
-            document.getElementById('gameInterface').className = 'absolute inset-0 bg-gray-900/95 z-50 flex flex-col items-center justify-start pt-10 md:justify-center md:pt-0 p-8 backdrop-blur-sm overflow-y-auto animate-fade-in';
-            document.getElementById('gameOverScreen').className = 'hidden';
-            updateGameUI();
-            nextQuestion();
-            quizState.timerId = setInterval(gameTick, 1000);
-        }
-
-        function gameTick() {
-            quizState.timeLeft--;
-            updateGameUI();
-            if(quizState.timeLeft <= 0) endGame();
-        }
-
-        function nextQuestion() {
-            if(quizState.qIndex >= 10) { endGame(); return; }
-            quizState.qIndex++;
-            quizState.currentQ = generateMathQuestion();
-            
-            // UI Update
-            document.getElementById('questionText').innerText = quizState.currentQ.text;
-            const btns = document.getElementById('optionsGrid').children;
-            
-            // Reset styles
-            for(let i=0; i<4; i++) {
-                btns[i].className = "quiz-option p-4 md:p-6 rounded-xl text-lg md:text-xl font-bold text-gray-300 text-left";
-                btns[i].innerText = quizState.currentQ.options[i];
-                btns[i].onclick = () => checkAnswer(i, btns[i]);
-                btns[i].disabled = false;
-            }
-            updateGameUI();
-            
-            // Reset Progress Bar Animation
-            const bar = document.getElementById('progressBar');
-            bar.style.animation = 'none';
-            bar.offsetHeight; /* trigger reflow */
-            bar.style.animation = `countdown ${quizState.timeLeft}s linear forwards`;
-        }
-
-        function checkAnswer(idx, btnElement) {
-            const correct = idx === quizState.currentQ.correctIndex;
-            const btns = document.getElementById('optionsGrid').children;
-            
-            // Lock buttons
-            for(let b of btns) b.disabled = true;
-
-            if(correct) {
-                btnElement.className += " quiz-correct";
-                quizState.score++;
-                // Sound effect visual
-            } else {
-                btnElement.className += " quiz-wrong";
-                // Highlight correct
-                btns[quizState.currentQ.correctIndex].className += " quiz-correct";
-            }
-
-            setTimeout(nextQuestion, 1000);
-        }
-
-        function endGame() {
-            clearInterval(quizState.timerId);
-            document.getElementById('gameOverScreen').className = 'absolute inset-0 bg-gray-900 z-50 flex flex-col items-center justify-center text-center animate-fade-in';
-            document.getElementById('finalScore').innerText = `${quizState.score}/10`;
-            
-            let rank = "Student Driver";
-            if(quizState.score >= 9) rank = "Isaac Newton Reincarnate";
-            else if(quizState.score >= 7) rank = "Physics Professor";
-            else if(quizState.score >= 5) rank = "Lab Assistant";
-            else if(quizState.score >= 3) rank = "Crash Test Dummy";
-            
-            document.getElementById('finalRank').innerText = rank;
-        }
-
-        function updateGameUI() {
-            document.getElementById('gameScore').innerText = quizState.score;
-            document.getElementById('gameQNum').innerText = quizState.qIndex;
-            document.getElementById('gameTimer').innerText = quizState.timeLeft;
-            if(quizState.timeLeft < 10) document.getElementById('gameTimer').className = "text-2xl md:text-3xl font-mono font-bold text-red-500 animate-pulse";
-            else document.getElementById('gameTimer').className = "text-2xl md:text-3xl font-mono font-bold text-white";
-        }
-
-        function generateMathQuestion() {
-            const types = ['p', 'v', 'cons_inelastic'];
-            const type = types[Math.floor(Math.random() * types.length)];
-            
-            let m1 = Math.floor(Math.random()*20 + 1) * 100; // 100-2000
-            let u1 = Math.floor(Math.random()*20 + 5); // 5-25
-            
-            let qText, ans, unit;
-
-            if (type === 'p') {
-                qText = `A blue car has a mass of ${m1} kg and travels at ${u1} m/s. What is its momentum?`;
-                ans = m1 * u1;
-                unit = "kg·m/s";
-            } else if (type === 'v') {
-                let p = m1 * u1;
-                qText = `A truck has momentum of ${p} kg·m/s and mass of ${m1} kg. What is its velocity?`;
-                ans = u1;
-                unit = "m/s";
-            } else {
-                let m2 = m1; 
-                let u2 = 0;
-                qText = `A ${m1}kg car moving at ${u1}m/s crashes into a stationary ${m2}kg car. They stick together. What is the final velocity?`;
-                // m1u1 = (m1+m2)v => v = m1u1 / (m1+m2)
-                ans = (m1*u1) / (m1+m2);
-                unit = "m/s";
-            }
-
-            // Generate Options
-            let options = [ans];
-            while(options.length < 4) {
-                let fake = ans * (0.5 + Math.random());
-                if(Math.random() > 0.5) fake = ans + Math.floor(Math.random()*10 + 1);
-                fake = parseFloat(fake.toFixed(1));
-                if(!options.includes(fake)) options.push(fake);
-            }
-            // Shuffle
-            options = options.sort(() => Math.random() - 0.5);
-            
-            // Format
-            const correctIndex = options.indexOf(parseFloat(ans.toFixed(1))) !== -1 ? options.indexOf(parseFloat(ans.toFixed(1))) : options.indexOf(ans);
-            // Fix float precision for display
-            const displayOptions = options.map(o => Number.isInteger(o) ? o + " " + unit : o.toFixed(1) + " " + unit);
-
-            return {
-                text: qText,
-                options: displayOptions,
-                correctIndex: correctIndex
-            };
-        }
-
-        // --- SIM/CALC LOGIC (Preserved) ---
-        function setScenario(type) {
-            resetSim();
-            if (type === 'chasing') {
-                document.getElementById('sim_m1').value = 1200; document.getElementById('sim_v1').value = 25;
-                document.getElementById('sim_m2').value = 1200; document.getElementById('sim_v2').value = 10;
-                document.getElementById('sim_v1_target').value = 17.5;
-            } else if (type === 'stationary') {
-                document.getElementById('sim_m1').value = 1500; document.getElementById('sim_v1').value = 20;
-                document.getElementById('sim_m2').value = 1000; document.getElementById('sim_v2').value = 0;
-                document.getElementById('sim_v1_target').value = 12;
-            } else if (type === 'headon') {
-                document.getElementById('sim_m1').value = 1200; document.getElementById('sim_v1').value = 15;
-                document.getElementById('sim_m2').value = 1200; document.getElementById('sim_v2').value = -15;
-                document.getElementById('sim_v1_target').value = 0;
-            }
-            readSimInputs();
-            setupPositions();
-            draw();
-        }
-
-        function readSimInputs() {
-            state.m1 = parseFloat(document.getElementById('sim_m1').value);
-            state.u1 = parseFloat(document.getElementById('sim_v1').value);
-            state.m2 = parseFloat(document.getElementById('sim_m2').value);
-            state.u2 = parseFloat(document.getElementById('sim_v2').value);
-            state.v1_target = parseFloat(document.getElementById('sim_v1_target').value);
-        }
-
-        function setProblem(type) {
-            const sel = document.getElementById('unknownSelector');
-            if (type === 'find_v2') {
-                sel.value = 'v2'; setCalcInput('m1', 1000); setCalcInput('u1', 20); setCalcInput('v1', 5); setCalcInput('m2', 1500); setCalcInput('u2', 0);
-            } else if (type === 'find_u1') {
-                sel.value = 'u1'; setCalcInput('m1', 1200); setCalcInput('v1', 0); setCalcInput('m2', 1000); setCalcInput('u2', 0); setCalcInput('v2', 20);
-            } else if (type === 'find_m2') {
-                sel.value = 'm2'; setCalcInput('m1', 2000); setCalcInput('u1', 10); setCalcInput('v1', 2); setCalcInput('u2', 0); setCalcInput('v2', 8);
-            } else if (type === 'recoil') {
-                sel.value = 'v1'; setCalcInput('m1', 5000); setCalcInput('u1', 0); setCalcInput('m2', 50); setCalcInput('u2', 0); setCalcInput('v2', 400);
-            }
-            updateSolverMode(); solve();
-        }
-
-        function setCalcInput(id, val) { document.getElementById('calc_'+id).value = val; }
-
-        function updateSolverMode() {
-            state.unknown = document.getElementById('unknownSelector').value;
-            ['m1','u1','v1','m2','u2','v2'].forEach(id => {
-                document.getElementById('grp_calc_' + id).classList.remove('calculated');
-                document.getElementById('calc_' + id).disabled = false;
+<script>
+    // --- APP STATE ---
+    let mode = 'sim'; // 'sim', 'calc', 'game'
+    let simState = 'idle'; // 'idle', 'running', 'ended'
+    
+    // Physics State
+    let m1 = 1000, u1 = 20, v1 = 0;
+    let m2 = 1500, u2 = 0, v2 = 0;
+    
+    // Canvas & Animation
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    let width, height;
+    let animId;
+    let p1_x, p2_x; // positions
+    let collisionX;
+    
+    // Visual Assets
+    let stars = [];
+    let buildings = [];
+    
+    // Crash Animation
+    let crashTimestamp = 0;
+    
+    // --- INITIALIZATION ---
+    function init() {
+        resize();
+        window.addEventListener('resize', resize);
+        setMode('sim');
+        // Initial Draw
+        draw();
+    }
+    
+    function generateScenery() {
+        // 1. Stars
+        stars = [];
+        for(let i=0; i<50; i++) {
+            stars.push({
+                x: Math.random(),
+                y: Math.random() * 0.6, // Top 60% only
+                size: Math.random() * 2,
+                opacity: Math.random()
             });
-            document.getElementById('grp_calc_' + state.unknown).classList.add('calculated');
-            document.getElementById('calc_' + state.unknown).disabled = true;
         }
-
-        function solve() {
-            if (state.mode !== 'calc' || state.isPlaying) return;
-            const v = {
-                m1: parseFloat(document.getElementById('calc_m1').value), u1: parseFloat(document.getElementById('calc_u1').value), v1: parseFloat(document.getElementById('calc_v1').value),
-                m2: parseFloat(document.getElementById('calc_m2').value), u2: parseFloat(document.getElementById('calc_u2').value), v2: parseFloat(document.getElementById('calc_v2').value)
-            };
-            let result = 0;
-            try {
-                switch(state.unknown) {
-                    case 'v2': result = (v.m1*v.u1 + v.m2*v.u2 - v.m1*v.v1) / v.m2; break;
-                    case 'v1': result = (v.m1*v.u1 + v.m2*v.u2 - v.m2*v.v2) / v.m1; break;
-                    case 'u1': result = (v.m1*v.v1 + v.m2*v.v2 - v.m2*v.u2) / v.m1; break;
-                    case 'u2': result = (v.m1*v.v1 + v.m2*v.v2 - v.m1*v.u1) / v.m2; break;
-                    case 'm1': result = (v.m2 * (v.v2 - v.u2)) / (v.u1 - v.v1); break;
-                    case 'm2': result = (v.m1 * (v.v1 - v.u1)) / (v.u2 - v.v2); break;
+        
+        // 2. Cityscape
+        buildings = [];
+        let curX = 0;
+        const horizonY = height/2; 
+        while(curX < width) {
+            const bWidth = 40 + Math.random() * 60;
+            const bHeight = 50 + Math.random() * 150;
+            const bY = horizonY - bHeight + 20; // Sit slightly behind road
+            
+            // Generate static window data
+            const windowData = [];
+            if(Math.random() > 0.3) { // Some have windows
+                for(let wy = bY + 10; wy < bY + bHeight - 10; wy += 15) {
+                    if(Math.random() > 0.5) {
+                        windowData.push(wy); // Store Y position
+                    }
                 }
-            } catch(e) { result = NaN; }
-
-            if (!isNaN(result) && isFinite(result)) {
-                document.getElementById('calc_' + state.unknown).value = Number.isInteger(result) ? result : result.toFixed(2);
-                state.m1=v.m1; state.u1=v.u1; state.v1=v.v1; state.m2=v.m2; state.u2=v.u2; state.v2=v.v2;
-                state[state.unknown] = result;
-            }
-            setupPositions(); draw();
-        }
-
-        function setupPositions() {
-            if (state.u1 > state.u2) { state.x1 = -7; state.x2 = 5; } else { state.x1 = -5; state.x2 = 7; }
-            state.currV1 = state.u1; state.currV2 = state.u2;
-        }
-
-        function toggleSim() {
-            if (state.isPlaying) {
-                state.isPlaying = false; cancelAnimationFrame(animId);
-                const icon = '<i class="fa-solid fa-play"></i> RESUME';
-                if(state.mode==='sim') document.getElementById('btnTextSim').innerHTML = icon;
-                else document.getElementById('btnTextCalc').innerHTML = icon;
-            } else {
-                if (state.mode === 'sim') {
-                    readSimInputs();
-                    const P_total = state.m1*state.u1 + state.m2*state.u2;
-                    state.v1 = state.v1_target;
-                    state.v2 = (P_total - state.m1*state.v1) / state.m2;
-                } else { solve(); }
-
-                document.querySelectorAll('input').forEach(i => i.disabled = true);
-                state.isPlaying = true;
-                const icon = '<i class="fa-solid fa-spinner fa-spin"></i> RUNNING...';
-                if(state.mode==='sim') document.getElementById('btnTextSim').innerHTML = icon;
-                else document.getElementById('btnTextCalc').innerHTML = icon;
-                
-                lastTime = performance.now(); loop(lastTime);
-            }
-        }
-
-        function resetSim() {
-            state.isPlaying = false; state.hasCollided = false; state.particles = []; cancelAnimationFrame(animId);
-            document.querySelectorAll('input').forEach(i => i.disabled = false);
-            if(state.mode==='calc') updateSolverMode();
-            document.getElementById('reportPanel').style.transform = "translateY(-200%)";
-            const icon = '<i class="fa-solid fa-play"></i> RUN SIMULATION';
-            if(document.getElementById('btnTextSim')) document.getElementById('btnTextSim').innerHTML = icon;
-            if(document.getElementById('btnTextCalc')) document.getElementById('btnTextCalc').innerHTML = icon;
-            if(state.mode === 'sim') readSimInputs(); else if(state.mode==='calc') solve();
-            setupPositions(); draw(); updateHUD();
-        }
-
-        function loop(timestamp) {
-            if (!state.isPlaying) return;
-            const dt = Math.min((timestamp - lastTime) / 1000, 0.05); lastTime = timestamp;
-            state.x1 += state.currV1 * dt; state.x2 += state.currV2 * dt;
-            const carWidth = 3.5; const dist = state.x2 - state.x1;
-            if (!state.hasCollided && dist <= carWidth) { if (state.currV1 > state.currV2) triggerCollision(); }
-            updateParticles(dt); draw(); updateHUD();
-            if (state.shakeTime > 0) { state.shakeTime -= dt; const s = (Math.random()-0.5)*10; wrapper.style.transform = `translate(${s}px, ${s}px)`; } 
-            else { wrapper.style.transform = `none`; }
-            animId = requestAnimationFrame(loop);
-        }
-
-        function triggerCollision() {
-            state.hasCollided = true; state.shakeTime = 0.3;
-            state.currV1 = state.v1; state.currV2 = state.v2;
-            const center = (state.x1 + state.x2) / 2; state.x1 = center - 1.8; state.x2 = center + 1.8;
-            spawnExplosion(center * state.scale + canvas.width/2, state.offsetY - 30);
-            showReport();
-        }
-
-        function showReport() {
-            const KE_i = 0.5*state.m1*state.u1**2 + 0.5*state.m2*state.u2**2;
-            const KE_f = 0.5*state.m1*state.v1**2 + 0.5*state.m2*state.v2**2;
-            const diff = KE_f - KE_i;
-            const badge = document.getElementById('feasibilityBadge'); const note = document.getElementById('energy_note');
-            const log = document.getElementById('solverLog'); const energyBar = document.getElementById('energyBar');
-
-            document.getElementById('tbl_u1').innerText = state.u1.toFixed(1); document.getElementById('tbl_v1').innerText = state.v1.toFixed(1);
-            document.getElementById('tbl_u2').innerText = state.u2.toFixed(1); document.getElementById('tbl_v2').innerText = state.v2.toFixed(1);
-            document.getElementById('rep_ke').innerText = diff.toFixed(1) + " J";
-
-            let valid = true;
-            if (diff > 1) {
-                badge.innerText = "IMPOSSIBLE"; badge.className = "px-4 py-2 rounded-lg text-xs font-bold bg-red-900/50 text-red-300 border border-red-800";
-                note.innerText = "VIOLATION: CREATED ENERGY"; note.className = "text-[10px] text-red-500 text-right uppercase tracking-wider font-bold";
-                energyBar.className = "h-full bg-red-500 w-full"; valid = false;
-            } else {
-                badge.innerText = "PHYSICALLY VALID"; badge.className = "px-4 py-2 rounded-lg text-xs font-bold bg-green-900/50 text-green-300 border border-green-800";
-                note.innerText = "ENERGY CONSERVED / LOST"; note.className = "text-[10px] text-green-500 text-right uppercase tracking-wider font-bold";
-                energyBar.className = "h-full bg-green-500 w-full";
             }
 
-            if (state.mode === 'sim') {
-                log.innerHTML = `<div class="mb-3 text-xs uppercase tracking-widest text-gray-500 font-bold">Simulation Mode</div><div class="mb-4 text-sm"><span class="text-orange-400 font-bold">Target V1:</span> ${state.v1_target} m/s</div><div class="p-4 bg-gray-900 rounded border border-gray-700"><div class="text-xs text-gray-400 mb-2">Calculating V2 via Momentum Conservation:</div><div class="fraction my-3 text-lg"><span class="num">m<sub>1</sub>u<sub>1</sub> + m<sub>2</sub>u<sub>2</sub> - m<sub>1</sub>v<sub>1</sub></span><span class="den">m<sub>2</sub></span></div><div class="mt-3 pt-3 border-t border-gray-700 flex justify-between items-center"><span class="text-gray-400 text-xs">Result V2</span><span class="text-green-400 font-bold font-mono text-lg">${state.v2.toFixed(2)} m/s</span></div></div>`;
-            } else {
-                const frac = (n, d) => `<div class="fraction"><span class="num">${n}</span><span class="den">${d}</span></div>`;
-                let eq = "";
-                if(state.unknown === 'v2') eq = `v<sub>2</sub> = ${frac(`m<sub>1</sub>u<sub>1</sub> + m<sub>2</sub>u<sub>2</sub> - m<sub>1</sub>v<sub>1</sub>`,`m<sub>2</sub>`)}`;
-                else if(state.unknown === 'v1') eq = `v<sub>1</sub> = ${frac(`m<sub>1</sub>u<sub>1</sub> + m<sub>2</sub>u<sub>2</sub> - m<sub>2</sub>v<sub>2</sub>`,`m<sub>1</sub>`)}`;
-                else eq = "Solved via Conservation of Momentum";
-                log.innerHTML = `<div class="mb-3 text-xs uppercase tracking-widest text-gray-500 font-bold">Solver Mode</div><div class="mb-4"><span class="text-amber-500 font-bold">Solving For:</span> ${state.unknown.toUpperCase()}</div><div class="p-4 bg-gray-900 rounded border border-gray-700"><div class="my-3 text-lg">${eq}</div><div class="mt-3 pt-3 border-t border-gray-700 flex justify-between items-center"><span class="text-gray-400 text-xs">Calculated Result</span><span class="text-amber-400 font-bold font-mono text-lg">${state[state.unknown].toFixed(2)}</span></div></div>`;
-            }
-            setTimeout(() => { document.getElementById('reportPanel').style.transform = "translateY(0)"; }, 100);
+            buildings.push({
+                x: curX,
+                y: bY,
+                w: bWidth,
+                h: bHeight,
+                windows: windowData // Store array of Y positions
+            });
+            curX += bWidth - 5; // Slight overlap
         }
+    }
+    
+    function resize() {
+        width = canvas.width = document.getElementById('canvasWrapper').offsetWidth;
+        height = canvas.height = document.getElementById('canvasWrapper').offsetHeight;
+        generateScenery();
+        resetPositions();
+    }
+    
+    function resetPositions() {
+        collisionX = width / 2;
+        p1_x = collisionX - 300;
+        p2_x = collisionX + 300;
+        if(mode === 'sim') {
+            // Update inputs from state or defaults
+            document.getElementById('sim_m1').value = m1;
+            document.getElementById('sim_u1').value = u1;
+            document.getElementById('sim_m2').value = m2;
+            document.getElementById('sim_u2').value = u2;
+            draw();
+        }
+    }
+    
+    // --- MODE SWITCHING ---
+    function setMode(newMode) {
+        mode = newMode;
+        
+        // Hide Game UI if open
+        document.getElementById('gameInterface').classList.add('hidden');
 
-        // --- Visuals ---
-        function spawnExplosion(x, y) { for(let i=0; i<30; i++) state.particles.push({x:x, y:y, vx:(Math.random()-0.5)*300, vy:(Math.random()-0.5)*300, life:1.0, color:`hsl(${Math.random()*60+10},100%,50%)`}); }
-        function updateParticles(dt) { for(let i=state.particles.length-1; i>=0; i--) { state.particles[i].x += state.particles[i].vx*dt; state.particles[i].y += state.particles[i].vy*dt; state.particles[i].life -= dt*1.5; if(state.particles[i].life<=0) state.particles.splice(i,1); } }
-        function draw() {
-            ctx.fillStyle = '#111827'; ctx.fillRect(0, 0, canvas.width, canvas.height); drawRoad();
-            const cx = canvas.width/2; 
-            
-            // Determine facing direction based on velocity (default to Right/1 if stopped)
-            const dir1 = state.currV1 < -0.1 ? -1 : 1;
-            const dir2 = state.currV2 < -0.1 ? -1 : 1;
+        // Update Buttons
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.classList.add('inactive');
+            btn.classList.remove('sim-active', 'calc-active', 'game-active');
+        });
+        
+        const btnMap = { 'sim': 'sim-active', 'calc': 'calc-active', 'game': 'game-active' };
+        document.getElementById('btn_' + mode).classList.remove('inactive');
+        document.getElementById('btn_' + mode).classList.add(btnMap[mode]);
+        
+        // Show Panels
+        document.getElementById('panel_sim').classList.add('hidden');
+        document.getElementById('panel_calc').classList.add('hidden');
+        document.getElementById('panel_game').classList.add('hidden');
+        
+        document.getElementById('panel_' + mode).classList.remove('hidden');
+        
+        // Reset Logic
+        resetSim();
+        
+        if (mode === 'calc') updateSolverMode();
+        if (mode === 'game') {
+            // Just show start screen
+            draw();
+        }
+    }
+    
+    // --- SCENARIO PRESETS (SIM MODE) ---
+    function setScenario(type) {
+        if(type === 'chasing') {
+            document.getElementById('sim_u1').value = 25;
+            document.getElementById('sim_u2').value = 10;
+        } else if (type === 'stationary') {
+            document.getElementById('sim_u1').value = 20;
+            document.getElementById('sim_u2').value = 0;
+        } else if (type === 'headon') {
+            document.getElementById('sim_u1').value = 15;
+            document.getElementById('sim_u2').value = -15;
+        }
+        resetSim();
+    }
 
-            drawCar(cx+state.x1*state.scale, state.offsetY, state.m1, '#3b82f6', 1, dir1); 
-            drawCar(cx+state.x2*state.scale, state.offsetY, state.m2, '#ef4444', 2, dir2);
-            
-            state.particles.forEach(p=>{ctx.globalAlpha=p.life;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,4,0,Math.PI*2);ctx.fill();}); ctx.globalAlpha=1;
-        }
-        function drawRoad() {
-            const y = state.offsetY; ctx.fillStyle='#064e3b'; ctx.fillRect(0, y-100, canvas.width, 200); ctx.fillStyle='#374151'; ctx.fillRect(0, y-60, canvas.width, 120);
-            ctx.fillStyle='#9ca3af'; ctx.fillRect(0, y-60, canvas.width, 4); ctx.fillRect(0, y+56, canvas.width, 4);
-            ctx.beginPath(); ctx.setLineDash([40, 40]); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.strokeStyle='#9ca3af'; ctx.lineWidth=4; ctx.stroke(); ctx.setLineDash([]);
-        }
-        function drawCar(x, groundY, mass, color, type, dir) {
-            ctx.save(); 
-            ctx.translate(x, groundY);
-            
-            let massFactor = Math.min(Math.max(mass, 500), 5000); 
-            const sizeScale = 1 + (massFactor - 1000) / 4000; 
-            
-            // Apply scale and direction flip
-            ctx.scale(dir * sizeScale, sizeScale);
-            
-            // Shadow
-            ctx.fillStyle = 'rgba(0,0,0,0.5)'; 
-            ctx.beginPath(); 
-            ctx.ellipse(0, 15, 50, 10, 0, 0, Math.PI*2); 
+    // --- MAIN LOOP ---
+    function draw() {
+        const roadLevel = height/2 + 40;
+
+        // 1. Sky Gradient
+        const grad = ctx.createLinearGradient(0, 0, 0, height);
+        grad.addColorStop(0, '#0f172a'); // Deep dark blue
+        grad.addColorStop(0.6, '#1e1b4b'); // Indigo
+        grad.addColorStop(1, '#312e81'); // Lighter at horizon
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, width, height);
+        
+        // 2. Stars
+        ctx.fillStyle = 'white';
+        stars.forEach(s => {
+            ctx.globalAlpha = s.opacity;
+            ctx.beginPath();
+            ctx.arc(s.x * width, s.y * height, s.size, 0, Math.PI*2);
             ctx.fill();
-            
-            // Car Body
-            ctx.fillStyle = color;
-            if (type === 1) { 
-                // Sporty Car (Facing Right)
-                ctx.beginPath(); 
-                ctx.moveTo(-50, 10); 
-                ctx.lineTo(50, 10); 
-                ctx.lineTo(50, -10); 
-                ctx.quadraticCurveTo(20, -10, 10, -25); 
-                ctx.lineTo(-20, -25); 
-                ctx.quadraticCurveTo(-40, -10, -50, -10); 
-                ctx.closePath(); 
-                ctx.fill();
-                // Stripe
-                ctx.fillStyle = 'rgba(255,255,255,0.2)'; 
-                ctx.fillRect(-20, -20, 40, 2);
-            } else { 
-                // Truck (Facing Right)
-                // Main Chassis
-                ctx.beginPath(); 
-                ctx.roundRect(-50, -10, 100, 30, 4); 
-                ctx.fill();
-                
-                // Cab (Shifted to Right side for Front)
-                ctx.beginPath(); 
-                ctx.roundRect(-10, -30, 55, 20, 4); 
-                ctx.fill();
-                
-                // Truck Bed Railing (Left side)
-                ctx.fillStyle = 'rgba(0,0,0,0.2)';
-                ctx.fillRect(-45, -15, 35, 5);
+        });
+        ctx.globalAlpha = 1.0;
 
-                // Window (On the Cab/Right)
-                ctx.fillStyle = '#a5f3fc'; 
-                ctx.fillRect(5, -25, 30, 12);
+        // 3. Cityscape Silhouette
+        ctx.fillStyle = '#111827'; // Darker than sky, barely visible
+        buildings.forEach(b => {
+            ctx.fillRect(b.x, b.y, b.w, b.h);
+            
+            // Windows (Static)
+            if(b.windows.length > 0) {
+                ctx.fillStyle = '#fbbf24'; // Warm light
+                ctx.globalAlpha = 0.3;
+                b.windows.forEach(wy => {
+                    ctx.fillRect(b.x + 5, wy, 4, 8);
+                    ctx.fillRect(b.x + b.w - 10, wy, 4, 8);
+                });
+                ctx.globalAlpha = 1.0;
+                ctx.fillStyle = '#111827'; // Reset
+            }
+        });
+
+        // 4. Ground/Grass Strip (Behind Road)
+        ctx.fillStyle = '#064e3b'; // Dark green
+        ctx.fillRect(0, roadLevel - 10, width, 10);
+
+        // 5. Road Surface
+        ctx.fillStyle = '#374151'; // Asphalt Gray
+        ctx.fillRect(0, roadLevel, width, height - roadLevel);
+        
+        // Road Noise/Texture (Simple)
+        ctx.fillStyle = 'rgba(0,0,0,0.1)';
+        ctx.fillRect(0, roadLevel, width, 5); // Shadow at curb
+        
+        // White Lane Markers (Dashed)
+        ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+        ctx.lineWidth = 4;
+        ctx.setLineDash([40, 60]);
+        ctx.beginPath();
+        ctx.moveTo(0, roadLevel + 60);
+        ctx.lineTo(width, roadLevel + 60);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        // Curb (Yellow line top)
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillRect(0, roadLevel, width, 4);
+
+        // 6. Cars
+        drawCar(p1_x, height/2, '#3b82f6', m1); // Blue
+        drawCar(p2_x, height/2, '#ef4444', m2); // Red
+        
+        // 7. Collision Marker / Explosion
+        if (simState === 'running' || simState === 'ended') {
+            if (crashTimestamp > 0) {
+                 drawExplosion(collisionX, height/2 + 15, performance.now() - crashTimestamp);
+            }
+        }
+    }
+    
+    function drawExplosion(x, y, timeSince) {
+        if (timeSince > 2000) return; // Expire after 2s
+        
+        const opacity = 1 - (timeSince / 2000);
+        const radius = 10 + (timeSince / 10);
+        
+        ctx.save();
+        ctx.translate(x, y);
+        
+        // Outer Glow
+        ctx.beginPath();
+        ctx.arc(0, 0, radius * 1.5, 0, Math.PI*2);
+        ctx.fillStyle = `rgba(255, 100, 0, ${opacity * 0.3})`;
+        ctx.fill();
+        
+        // Core Fire (Jagged)
+        ctx.beginPath();
+        const spikes = 12;
+        for(let i=0; i<spikes*2; i++) {
+            const r = (i % 2 === 0) ? radius : radius/2;
+            const a = (i / (spikes*2)) * Math.PI*2;
+            const wobble = Math.sin(timeSince * 0.05 + i) * 5;
+            ctx.lineTo(Math.cos(a) * (r + wobble), Math.sin(a) * (r + wobble));
+        }
+        ctx.closePath();
+        ctx.fillStyle = `rgba(255, ${200 - (timeSince/10)}, 0, ${opacity})`;
+        ctx.fill();
+        
+        // Smoke Particles
+        for(let i=0; i<5; i++) {
+            const smokeR = radius * 0.5;
+            const angle = (timeSince * 0.001) + (i * Math.PI * 0.4);
+            const dist = (timeSince / 15) + (i*10);
+            ctx.beginPath();
+            ctx.arc(Math.cos(angle)*dist, Math.sin(angle)*dist - (timeSince/10), smokeR, 0, Math.PI*2);
+            ctx.fillStyle = `rgba(100, 100, 100, ${opacity * 0.5})`;
+            ctx.fill();
+        }
+
+        ctx.restore();
+    }
+    
+    function drawCar(x, y, color, mass) {
+        ctx.save();
+        ctx.translate(x, y);
+        
+        // Shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.beginPath();
+        ctx.ellipse(0, 45, 40, 10, 0, 0, Math.PI*2);
+        ctx.fill();
+        
+        // Body
+        ctx.fillStyle = color;
+        // Simple sport car shape
+        ctx.beginPath();
+        ctx.moveTo(-40, 40);
+        ctx.lineTo(40, 40); // bottom
+        ctx.lineTo(40, 10); // front bumper
+        ctx.quadraticCurveTo(20, 10, 10, -10); // hood to windshield
+        ctx.lineTo(-20, -10); // roof
+        ctx.lineTo(-40, 10); // back
+        ctx.closePath();
+        ctx.fill();
+        
+        // Wheels
+        ctx.fillStyle = '#111';
+        ctx.beginPath(); ctx.arc(-25, 40, 12, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(25, 40, 12, 0, Math.PI*2); ctx.fill();
+        
+        // Mass Label
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(mass + 'kg', 0, 20);
+        
+        ctx.restore();
+    }
+    
+    // --- SIMULATION LOGIC ---
+    let lastTime = 0;
+    
+    function toggleSim() {
+        if(simState === 'idle') {
+            startSimulation();
+        } else {
+            resetSim();
+        }
+    }
+    
+    function startSimulation() {
+        simState = 'running';
+        
+        // 1. Get Values based on mode
+        if (mode === 'sim') {
+            m1 = parseFloat(document.getElementById('sim_m1').value);
+            u1 = parseFloat(document.getElementById('sim_u1').value);
+            m2 = parseFloat(document.getElementById('sim_m2').value);
+            u2 = parseFloat(document.getElementById('sim_u2').value);
+            
+            // In Scenario Mode, we trust the USER inputs for final velocity animation
+            v1 = parseFloat(document.getElementById('sim_v1_target').value);
+            v2 = parseFloat(document.getElementById('sim_v2_target').value);
+            
+            document.getElementById('btnTextSim').innerHTML = '<i class="fa-solid fa-stop"></i> STOP';
+            
+        } else if (mode === 'calc') {
+            // In Calc Mode, the solver has already run via oninput events
+            // We just need to grab the current input values for animation
+            m1 = parseFloat(document.getElementById('calc_m1').value);
+            u1 = parseFloat(document.getElementById('calc_u1').value);
+            v1 = parseFloat(document.getElementById('calc_v1').value);
+            m2 = parseFloat(document.getElementById('calc_m2').value);
+            u2 = parseFloat(document.getElementById('calc_u2').value);
+            v2 = parseFloat(document.getElementById('calc_v2').value);
+            
+            document.getElementById('btnTextCalc').innerHTML = '<i class="fa-solid fa-stop"></i> STOP';
+        }
+        
+        // Reset Positions for run
+        collisionX = width/2;
+        // Back them up based on velocity to ensure they hit at center roughly
+        // Simplified: Fixed start points
+        p1_x = collisionX - 250; 
+        p2_x = collisionX + 250;
+        
+        lastTime = performance.now();
+        animId = requestAnimationFrame(update);
+    }
+    
+    function resetSim() {
+        simState = 'idle';
+        crashTimestamp = 0;
+        cancelAnimationFrame(animId);
+        
+        // Hide Report
+        document.getElementById('reportPanel').style.transform = 'translateY(-200%)';
+        
+        // Reset Buttons
+        document.getElementById('btnTextSim').innerHTML = '<i class="fa-solid fa-play"></i> RUN SIMULATION';
+        document.getElementById('btnTextCalc').innerHTML = '<i class="fa-solid fa-play"></i> RUN SIMULATION';
+        
+        resetPositions();
+        
+        // Reset HUD
+        document.getElementById('hud_p1').innerText = '0';
+        document.getElementById('hud_p2').innerText = '0';
+        
+        // Redraw static
+        draw();
+    }
+    
+    function update(time) {
+        const dt = (time - lastTime) / 1000; // seconds
+        lastTime = time;
+        
+        // Physics Loop (Simplified for Visuals)
+        const speedScale = 1.0; // Visual speed multiplier (Reduced from 3.0 for slower motion)
+        
+        // Detect Collision
+        // Cars are roughly 80px wide (-40 to 40). Distance check < 80
+        const dist = p2_x - p1_x;
+        const hasCrashed = dist <= 85; 
+        
+        if (!hasCrashed) {
+            // Move with Initial Velocity
+            p1_x += u1 * speedScale;
+            p2_x += u2 * speedScale; // u2 usually negative if coming from right, or 0
+        } else {
+            // Move with Final Velocity
+            
+            if (crashTimestamp === 0) {
+                crashTimestamp = time; // Mark collision time
+                collisionX = (p1_x + p2_x) / 2; // Capture exact impact point
+            }
+
+            // Ensure they don't overlap visually too much
+            if(p2_x - p1_x < 85) {
+                // Force separation slightly to prevent clipping if v1 > v2? 
+                // Just let them pass through if ghosts, or move apart
+            }
+            p1_x += v1 * speedScale;
+            p2_x += v2 * speedScale;
+            
+            // Show Report after a few seconds of post-crash
+            if (document.getElementById('reportPanel').style.transform.includes('-200')) {
+                // Generate Report Data
+                generateReport();
+                // Show it
+                setTimeout(() => {
+                    document.getElementById('reportPanel').style.transform = 'translateY(0)';
+                }, 500);
+            }
+        }
+        
+        // Boundary checks (loop or stop)
+        if (p1_x > width + 100 || p1_x < -100 || p2_x > width + 100 || p2_x < -100) {
+            // Stop animation eventually
+             if (simState === 'running') {
+                 simState = 'ended';
+             }
+        }
+        
+        // Update Real-time HUD
+        const curV1 = hasCrashed ? v1 : u1;
+        const curV2 = hasCrashed ? v2 : u2;
+        document.getElementById('hud_p1').innerText = (m1 * curV1).toFixed(0);
+        document.getElementById('hud_p2').innerText = (m2 * curV2).toFixed(0);
+        
+        draw();
+        
+        if (simState === 'running') {
+            requestAnimationFrame(update);
+        }
+    }
+    
+    // --- REPORT GENERATION ---
+    function generateReport() {
+        const Pi = (m1 * u1) + (m2 * u2);
+        const Pf = (m1 * v1) + (m2 * v2);
+        
+        const KEi = 0.5 * m1 * u1 * u1 + 0.5 * m2 * u2 * u2;
+        const KEf = 0.5 * m1 * v1 * v1 + 0.5 * m2 * v2 * v2;
+        const dKE = KEf - KEi;
+        
+        // DOM Elements
+        const log = document.getElementById('solverLog');
+        const badge = document.getElementById('feasibilityBadge');
+        
+        // Update Table
+        document.getElementById('tbl_u1').innerText = u1.toFixed(1);
+        document.getElementById('tbl_v1').innerText = v1.toFixed(1);
+        document.getElementById('tbl_u2').innerText = u2.toFixed(1);
+        document.getElementById('tbl_v2').innerText = v2.toFixed(1);
+        document.getElementById('rep_ke').innerText = dKE.toFixed(0) + " J";
+        
+        // Energy Bar visual
+        const bar = document.getElementById('energyBar');
+        const note = document.getElementById('energy_note');
+        
+        // Analysis Logic
+        let html = "";
+        
+        if (mode === 'sim') {
+            // In Scenario Mode, we check if the USER's prediction was valid
+            
+            // 1. Basic Momentum Check
+            const momentumDiff = Math.abs(Pf - Pi);
+            const isConserved = momentumDiff < 50; // Tolerance
+            
+            // 2. Physical Validity Check (Penetration)
+            // v1 (Back Car) must be <= v2 (Front Car) otherwise it passed through
+            const isPhysicallyImpossible = v1 > v2;
+
+            html += `<p><span class="text-gray-500">Initial Momentum:</span> <span class="text-blue-300 font-mono">${Pi.toFixed(0)} kg·m/s</span></p>`;
+            html += `<p><span class="text-gray-500">Final Momentum:</span> <span class="text-blue-300 font-mono">${Pf.toFixed(0)} kg·m/s</span></p>`;
+            html += `<hr class="border-gray-800 my-2">`;
+            
+            if (isPhysicallyImpossible) {
+                badge.innerText = "IMPOSSIBLE SCENARIO";
+                badge.className = "px-4 py-2 rounded-lg text-xs font-bold bg-red-900 text-white border border-red-500 animate-pulse";
+                html += `<p class="text-red-400 font-bold"><i class="fa-solid fa-ban"></i> PHYSICS VIOLATION</p>`;
+                html += `<p class="text-gray-300 text-xs mt-1">The Blue car (Rear) is moving faster (${v1} m/s) than the Red car (${v2} m/s) after the crash.</p>`;
+                html += `<p class="text-gray-500 text-xs mt-1">This implies the cars passed through each other like ghosts!</p>`;
+                
+                // Reset Bar for impossible
+                bar.style.width = '100%';
+                bar.className = 'h-full bg-red-600';
+                note.innerText = "Error";
+                
+            } else if (isConserved) {
+                badge.innerText = "PHYSICS VALID";
+                badge.className = "px-4 py-2 rounded-lg text-xs font-bold bg-green-900/50 text-green-400 border border-green-700";
+                html += `<p class="text-green-400 font-bold"><i class="fa-solid fa-check"></i> Momentum Conserved.</p>`;
+                
+                // Check Energy type
+                if (Math.abs(dKE) < 1000) {
+                     html += `<p class="text-blue-400">Type: <b>Elastic Collision</b> (Kinetic Energy Conserved)</p>`;
+                } else if (dKE < 0) {
+                     html += `<p class="text-amber-400">Type: <b>Inelastic Collision</b> (Energy lost to heat/sound)</p>`;
+                     html += `<p class="text-xs text-gray-500 mt-1">Efficiency: ${(KEf/KEi*100).toFixed(1)}%</p>`;
+                } else {
+                     html += `<p class="text-purple-400">Type: <b>Super-Elastic</b> (Energy Added! Explosion?)</p>`;
+                }
+                
+            } else {
+                badge.innerText = "MOMENTUM ERROR";
+                badge.className = "px-4 py-2 rounded-lg text-xs font-bold bg-amber-900/50 text-amber-400 border border-amber-700";
+                html += `<p class="text-amber-400 font-bold"><i class="fa-solid fa-triangle-exclamation"></i> Momentum NOT Conserved.</p>`;
+                html += `<p class="text-gray-400 text-xs">Difference: ${momentumDiff.toFixed(0)} (Tolerance: 50)</p>`;
+                html += `<p class="text-gray-400 text-xs mt-2">Check your final velocity inputs.</p>`;
             }
             
-            // Wheels (Symmetric)
-            ctx.fillStyle = '#111827'; 
-            ctx.beginPath(); ctx.arc(-30, 15, 10, 0, Math.PI*2); ctx.arc(30, 15, 10, 0, Math.PI*2); ctx.fill();
-            
-            // Hubcaps
-            ctx.fillStyle = '#6b7280'; 
-            ctx.beginPath(); ctx.arc(-30, 15, 4, 0, Math.PI*2); ctx.arc(30, 15, 4, 0, Math.PI*2); ctx.fill();
-            
-            ctx.restore();
+        } else {
+            // Calc Mode (Standard output)
+            html += `<p>Solver executed successfully.</p>`;
+            badge.innerText = "SOLVED";
+            badge.className = "px-4 py-2 rounded-lg text-xs font-bold bg-blue-900/50 text-blue-400 border border-blue-700";
         }
-        function updateHUD() {
-            const p1 = state.m1 * state.currV1; const p2 = state.m2 * state.currV2;
-            document.getElementById('hud_p1').innerText = Math.abs(p1).toFixed(0); document.getElementById('hud_p2').innerText = Math.abs(p2).toFixed(0);
+        
+        log.innerHTML = html;
+        
+        // Energy Bar Logic (Only if valid)
+        if (mode !== 'sim' || (v1 <= v2)) {
+            // Normalize width based on initial KE
+            // If KE lost, bar shrinks. If KE gained, bar fills red.
+            if (KEi === 0 && KEf === 0) {
+                 bar.style.width = '0%';
+            } else if (KEi === 0) {
+                 // Explosion from rest
+                 bar.style.width = '100%';
+                 bar.className = 'h-full bg-purple-500 w-full';
+            } else {
+                const ratio = Math.min((KEf / KEi) * 100, 100);
+                bar.style.width = ratio + '%';
+                if (dKE < -100) {
+                    bar.className = 'h-full bg-amber-500 transition-all duration-1000';
+                    note.innerText = "Energy Dissipated (Heat/Sound)";
+                } else if (dKE > 100) {
+                    bar.className = 'h-full bg-purple-500 transition-all duration-1000';
+                    note.innerText = "Energy Injected (Explosion)";
+                } else {
+                    bar.className = 'h-full bg-blue-500 transition-all duration-1000';
+                    note.innerText = "Perfectly Elastic";
+                }
+            }
         }
+    }
 
-        window.onload = init;
-    </script>
+    // --- SOLVER MODE LOGIC ---
+    function updateSolverMode() {
+        // Unlock all inputs first
+        document.querySelectorAll('#panel_calc .input-group').forEach(el => {
+            el.classList.remove('calculated', 'opacity-50', 'pointer-events-none');
+            el.querySelector('input').readOnly = false;
+        });
+        
+        const target = document.getElementById('unknownSelector').value;
+        const targetGroup = document.getElementById('grp_calc_' + target);
+        const targetInput = document.getElementById('calc_' + target);
+        
+        // Lock target
+        targetGroup.classList.add('calculated', 'pointer-events-none');
+        targetInput.readOnly = true;
+        
+        solve();
+    }
+    
+    function setProblem(type) {
+        // Preset values for calculator
+        if(type === 'find_v2') {
+             document.getElementById('unknownSelector').value = 'v2';
+             document.getElementById('calc_m1').value = 1000;
+             document.getElementById('calc_u1').value = 20;
+             document.getElementById('calc_v1').value = 5;
+             document.getElementById('calc_m2').value = 1500;
+             document.getElementById('calc_u2').value = 0;
+        } else if (type === 'find_u1') {
+             document.getElementById('unknownSelector').value = 'u1';
+             document.getElementById('calc_m1').value = 2000;
+             document.getElementById('calc_v1').value = 10;
+             document.getElementById('calc_m2').value = 1000;
+             document.getElementById('calc_u2').value = -10;
+             document.getElementById('calc_v2').value = 20;
+        } else if (type === 'recoil') {
+             document.getElementById('unknownSelector').value = 'v1';
+             document.getElementById('calc_m1').value = 5000; // Cannon
+             document.getElementById('calc_u1').value = 0;
+             document.getElementById('calc_m2').value = 100; // Ball
+             document.getElementById('calc_u2').value = 0;
+             document.getElementById('calc_v2').value = 100; // Ball fired
+        }
+        updateSolverMode();
+    }
+    
+    function solve() {
+        const target = document.getElementById('unknownSelector').value;
+        
+        let m1 = parseFloat(document.getElementById('calc_m1').value);
+        let u1 = parseFloat(document.getElementById('calc_u1').value);
+        let v1 = parseFloat(document.getElementById('calc_v1').value);
+        let m2 = parseFloat(document.getElementById('calc_m2').value);
+        let u2 = parseFloat(document.getElementById('calc_u2').value);
+        let v2 = parseFloat(document.getElementById('calc_v2').value);
+        
+        // Conservation of Momentum: m1u1 + m2u2 = m1v1 + m2v2
+        let res = 0;
+        
+        if (target === 'v2') {
+            // v2 = (m1u1 + m2u2 - m1v1) / m2
+            res = ((m1*u1 + m2*u2) - (m1*v1)) / m2;
+        } else if (target === 'v1') {
+            res = ((m1*u1 + m2*u2) - (m2*v2)) / m1;
+        } else if (target === 'u1') {
+            res = ((m1*v1 + m2*v2) - (m2*u2)) / m1;
+        } else if (target === 'u2') {
+            res = ((m1*v1 + m2*v2) - (m1*u1)) / m2;
+        } else if (target === 'm1') {
+            // m1(u1 - v1) = m2(v2 - u2) => m1 = m2(v2 - u2) / (u1 - v1)
+            res = (m2 * (v2 - u2)) / (u1 - v1);
+        } else if (target === 'm2') {
+             res = (m1 * (u1 - v1)) / (v2 - u2);
+        }
+        
+        if (!isNaN(res) && isFinite(res)) {
+            document.getElementById('calc_' + target).value = parseFloat(res.toFixed(2));
+        } else {
+            document.getElementById('calc_' + target).value = "";
+        }
+    }
+
+    // --- GAME (QUIZ) LOGIC ---
+    let gameTimer, gameInterval;
+    let score = 0;
+    let questionCount = 0;
+    let currentAnswer = 0;
+    
+    function startGame() {
+        document.getElementById('gameInterface').classList.remove('hidden');
+        document.getElementById('gameOverScreen').classList.add('hidden');
+        score = 0;
+        questionCount = 0;
+        document.getElementById('gameScore').innerText = score;
+        
+        startTimer();
+        nextQuestion();
+    }
+    
+    function startTimer() {
+        let t = 60;
+        const el = document.getElementById('gameTimer');
+        const bar = document.getElementById('progressBar');
+        el.innerText = t;
+        bar.style.animation = 'none';
+        bar.offsetHeight; /* trigger reflow */
+        bar.style.animation = 'countdown 60s linear forwards';
+        
+        if(gameInterval) clearInterval(gameInterval);
+        gameInterval = setInterval(() => {
+            t--;
+            el.innerText = t;
+            if(t <= 0) endGame();
+        }, 1000);
+    }
+    
+    function nextQuestion() {
+        if(questionCount >= 10) {
+            endGame();
+            return;
+        }
+        questionCount++;
+        document.getElementById('gameQNum').innerText = questionCount;
+        
+        // Generate Momentum Question
+        // Types: 1. Calculate P, 2. Conserve P find V
+        const type = Math.random() > 0.5 ? 1 : 2;
+        let qText = "";
+        let ans = 0;
+        let unit = "";
+        
+        if (type === 1) {
+            const m = Math.floor(Math.random() * 10) + 1;
+            const v = Math.floor(Math.random() * 20) + 1;
+            qText = `An object of mass ${m}kg is moving at ${v}m/s. What is its momentum?`;
+            ans = m * v;
+            unit = "kg·m/s";
+        } else {
+            const m1_g = Math.floor(Math.random() * 5) + 1;
+            const u1_g = Math.floor(Math.random() * 10) + 2;
+            const m2_g = Math.floor(Math.random() * 5) + 1;
+            // perfectly inelastic
+            qText = `A ${m1_g}kg cart at ${u1_g}m/s hits a stationary ${m2_g}kg cart and they stick. Final speed?`;
+            ans = (m1_g * u1_g) / (m1_g + m2_g);
+            unit = "m/s";
+        }
+        
+        currentAnswer = parseFloat(ans.toFixed(1));
+        document.getElementById('questionText').innerText = qText;
+        
+        // Generate Options
+        const opts = [currentAnswer];
+        while(opts.length < 4) {
+            let fake = currentAnswer + (Math.floor(Math.random() * 10) - 5);
+            if(fake < 0) fake = 0;
+            fake = parseFloat(fake.toFixed(1));
+            if(!opts.includes(fake)) opts.push(fake);
+        }
+        // Shuffle
+        opts.sort(() => Math.random() - 0.5);
+        
+        const btns = document.querySelectorAll('.quiz-option');
+        btns.forEach((btn, i) => {
+            btn.innerText = opts[i] + " " + unit;
+            btn.className = 'quiz-option p-4 md:p-6 rounded-xl text-lg md:text-xl font-bold text-gray-300 text-left';
+            btn.onclick = () => checkAnswer(opts[i], btn);
+        });
+    }
+    
+    function checkAnswer(val, btn) {
+        if(Math.abs(val - currentAnswer) < 0.1) {
+            score++;
+            document.getElementById('gameScore').innerText = score;
+            btn.classList.add('quiz-correct');
+        } else {
+            btn.classList.add('quiz-wrong');
+        }
+        
+        setTimeout(() => {
+            nextQuestion();
+        }, 500);
+    }
+    
+    function endGame() {
+        clearInterval(gameInterval);
+        document.getElementById('gameOverScreen').classList.remove('hidden');
+        document.getElementById('finalScore').innerText = score + "/10";
+        
+        let rank = "Physics Novice";
+        if(score > 3) rank = "Lab Assistant";
+        if(score > 6) rank = "Research Scientist";
+        if(score > 9) rank = "Nobel Laureate";
+        document.getElementById('finalRank').innerText = rank;
+    }
+
+    // Init
+    init();
+
+</script>
 </body>
 </html>
