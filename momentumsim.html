@@ -213,7 +213,7 @@
                 <div id="btn_calc" onclick="setMode('calc')" class="mode-btn inactive group">
                     <i class="fa-solid fa-calculator text-base mb-1 group-hover:scale-110 transition-transform text-amber-200"></i>
                     <span class="text-white">Solver</span>
-                    <span class="opacity-70 font-sans font-medium text-[9px] normal-case tracking-normal text-amber-100">Calculator (only momentum)</span>
+                    <span class="opacity-70 font-sans font-medium text-[9px] normal-case tracking-normal text-amber-100">Calculator</span>
                 </div>
                 <div id="btn_game" onclick="setMode('game')" class="mode-btn inactive group">
                     <i class="fa-solid fa-gamepad text-base mb-1 group-hover:scale-110 transition-transform text-purple-200"></i>
@@ -907,7 +907,7 @@
         lastTime = time;
         
         // Physics Loop (Simplified for Visuals)
-        const speedScale = 1.0; // Visual speed multiplier (Reduced from 3.0 for slower motion)
+        const speedScale = 2.0; // Visual speed multiplier (Increased for faster motion)
         
         // Detect Collision
         // Cars are roughly 80px wide (-40 to 40). Distance check < 80
@@ -943,14 +943,6 @@
                     document.getElementById('reportPanel').style.transform = 'translateY(0)';
                 }, 500);
             }
-        }
-        
-        // Boundary checks (loop or stop)
-        if (p1_x > width + 100 || p1_x < -100 || p2_x > width + 100 || p2_x < -100) {
-            // Stop animation eventually
-             if (simState === 'running') {
-                 simState = 'ended';
-             }
         }
         
         // Update Real-time HUD
