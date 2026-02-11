@@ -213,7 +213,7 @@
                 <div id="btn_calc" onclick="setMode('calc')" class="mode-btn inactive group">
                     <i class="fa-solid fa-calculator text-base mb-1 group-hover:scale-110 transition-transform text-amber-200"></i>
                     <span class="text-white">Solver</span>
-                    <span class="opacity-70 font-sans font-medium text-[9px] normal-case tracking-normal text-amber-100">Calculator for conservation of momentum</span>
+                    <span class="opacity-70 font-sans font-medium text-[9px] normal-case tracking-normal text-amber-100">Calculator</span>
                 </div>
                 <div id="btn_game" onclick="setMode('game')" class="mode-btn inactive group">
                     <i class="fa-solid fa-gamepad text-base mb-1 group-hover:scale-110 transition-transform text-purple-200"></i>
@@ -1038,6 +1038,7 @@
         } else {
             // Calc Mode (Standard output)
             html += `<p>Solver executed successfully.</p>`;
+            html += `<p class="text-gray-400 text-xs mt-2 italic">Note: Only solved the conservation of momentum equation, not proved if the case is valid or not.</p>`;
             badge.innerText = "SOLVED";
             badge.className = "px-4 py-2 rounded-lg text-xs font-bold bg-blue-900/50 text-blue-400 border border-blue-700";
         }
