@@ -156,8 +156,8 @@
         }
 
         /* Math Formatting */
-        .math-ctx { font-family: 'Times New Roman', Times, serif; font-size: 1.15em; line-height: 1.6; }
-        .math-ctx i { font-family: 'Times New Roman', Times, serif; font-weight: normal; }
+        .math-ctx { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.95em; line-height: 1.6; }
+        .math-ctx i { font-family: inherit; font-style: italic; color: #93c5fd; }
         .fraction { display: inline-block; vertical-align: middle; text-align: center; margin: 0 4px; }
         .fraction > .num { border-bottom: 1px solid #9ca3af; display: block; padding: 0 4px; font-size: 0.9em; }
         .fraction > .den { display: block; padding: 0 4px; font-size: 0.9em; }
@@ -910,9 +910,16 @@
         const speedScale = 2.0; // Visual speed multiplier (Increased for faster motion)
         
         // Detect Collision
-        // Cars are roughly 80px wide (-40 to 40). Distance check < 80
         const dist = p2_x - p1_x;
-        const hasCrashed = dist <= 85; 
+        
+        // Only trigger the initial crash once
+        if (crashTimestamp === 0 && dist <= 85) {
+            crashTimestamp = time; // Mark collision time
+            collisionX = (p1_x + p2_x) / 2; // Capture exact impact point
+        }
+        
+        // If crashTimestamp is set, they are currently in a crashed state
+        const hasCrashed = crashTimestamp > 0; 
         
         if (!hasCrashed) {
             // Move with Initial Velocity
@@ -920,17 +927,6 @@
             p2_x += u2 * speedScale; // u2 usually negative if coming from right, or 0
         } else {
             // Move with Final Velocity
-            
-            if (crashTimestamp === 0) {
-                crashTimestamp = time; // Mark collision time
-                collisionX = (p1_x + p2_x) / 2; // Capture exact impact point
-            }
-
-            // Ensure they don't overlap visually too much
-            if(p2_x - p1_x < 85) {
-                // Force separation slightly to prevent clipping if v1 > v2? 
-                // Just let them pass through if ghosts, or move apart
-            }
             p1_x += v1 * speedScale;
             p2_x += v2 * speedScale;
             
