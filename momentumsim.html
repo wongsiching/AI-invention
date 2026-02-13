@@ -988,27 +988,49 @@
             const momentumDiff = Math.abs(Pf - Pi);
             const isConserved = momentumDiff < 50; // Tolerance
             
-            // 2. Physical Validity Check (Penetration)
-            // v1 (Back Car) must be <= v2 (Front Car) otherwise it passed through
-            const isPhysicallyImpossible = v1 > v2;
+// 2. Physical Validity Checks
+
+// A) Penetration Check
+const isPenetration = v1 > v2;
+
+// B) Kinetic Energy Gain Check
+// Energy increase is only allowed if initial KE was zero (explosion case)
+const energyIncrease = dKE > 100; // tolerance
+const isExplosionCase = KEi === 0 && KEf > 0;
+
+const isEnergyViolation = energyIncrease && !isExplosionCase;
+
+// Final Physical Violation Flag
+const isPhysicallyImpossible = isPenetration || isEnergyViolation;
 
             html += `<p><span class="text-gray-500">Initial Momentum:</span> <span class="text-blue-300 font-mono">${Pi.toFixed(0)} kg·m/s</span></p>`;
             html += `<p><span class="text-gray-500">Final Momentum:</span> <span class="text-blue-300 font-mono">${Pf.toFixed(0)} kg·m/s</span></p>`;
             html += `<hr class="border-gray-800 my-2">`;
             
             if (isPhysicallyImpossible) {
-                badge.innerText = "IMPOSSIBLE SCENARIO";
-                badge.className = "px-4 py-2 rounded-lg text-xs font-bold bg-red-900 text-white border border-red-500 animate-pulse";
-                html += `<p class="text-red-400 font-bold"><i class="fa-solid fa-ban"></i> PHYSICS VIOLATION</p>`;
-                html += `<p class="text-gray-300 text-xs mt-1">The Blue car (Rear) is moving faster (${v1} m/s) than the Red car (${v2} m/s) after the crash.</p>`;
-                html += `<p class="text-gray-500 text-xs mt-1">This implies the cars passed through each other like ghosts!</p>`;
-                
-                // Reset Bar for impossible
-                bar.style.width = '100%';
-                bar.className = 'h-full bg-red-600';
-                note.innerText = "Error";
-                
-            } else if (isConserved) {
+
+    badge.innerText = "PHYSICS VIOLATION";
+    badge.className = "px-4 py-2 rounded-lg text-xs font-bold bg-red-900 text-white border border-red-500 animate-pulse";
+
+    html += `<p class="text-red-400 font-bold"><i class="fa-solid fa-ban"></i> PHYSICS VIOLATION</p>`;
+
+    if (isPenetration) {
+        html += `<p class="text-gray-300 text-xs mt-1">Rear vehicle exits faster than front vehicle after impact.</p>`;
+        html += `<p class="text-gray-500 text-xs mt-1">Objects cannot pass through each other.</p>`;
+    }
+
+    if (isEnergyViolation) {
+        html += `<p class="text-gray-300 text-xs mt-2">Kinetic energy increased without external energy input.</p>`;
+        html += `<p class="text-gray-500 text-xs mt-1">Energy cannot be created in a closed collision.</p>`;
+        html += `<p class="text-amber-400 text-xs mt-1">ΔKE = ${dKE.toFixed(0)} J</p>`;
+    }
+
+    // Force red energy bar
+    bar.style.width = '100%';
+    bar.className = 'h-full bg-red-600';
+    note.innerText = "Energy Creation Detected";
+}
+ else if (isConserved) {
                 badge.innerText = "PHYSICS VALID";
                 badge.className = "px-4 py-2 rounded-lg text-xs font-bold bg-green-900/50 text-green-400 border border-green-700";
                 html += `<p class="text-green-400 font-bold"><i class="fa-solid fa-check"></i> Momentum Conserved.</p>`;
