@@ -1036,14 +1036,27 @@ const isPhysicallyImpossible = isPenetration || isEnergyViolation;
                 html += `<p class="text-green-400 font-bold"><i class="fa-solid fa-check"></i> Momentum Conserved.</p>`;
                 
                 // Check Energy type
-                if (Math.abs(dKE) < 1000) {
-                     html += `<p class="text-blue-400">Type: <b>Elastic Collision</b> (Kinetic Energy Conserved)</p>`;
-                } else if (dKE < 0) {
-                     html += `<p class="text-amber-400">Type: <b>Inelastic Collision</b> (Energy lost to heat/sound)</p>`;
-                     html += `<p class="text-xs text-gray-500 mt-1">Efficiency: ${(KEf/KEi*100).toFixed(1)}%</p>`;
-                } else {
-                     html += `<p class="text-purple-400">Type: <b>Super-Elastic</b> (Energy Added! Explosion?)</p>`;
-                }
+const isPerfectlyInelastic = Math.abs(v1 - v2) < 0.01;
+
+if (Math.abs(dKE) < 1000) {
+
+    html += `<p class="text-blue-400">Type: <b>Elastic Collision</b> (Kinetic Energy Conserved)</p>`;
+
+} else if (dKE < 0) {
+
+    if (isPerfectlyInelastic) {
+        html += `<p class="text-red-400 font-bold">Type: <b>Perfectly Inelastic Collision</b></p>`;
+        html += `<p class="text-gray-400 text-xs mt-1">Objects move together after impact (v₁ = v₂).</p>`;
+    } else {
+        html += `<p class="text-amber-400">Type: <b>Inelastic Collision</b> (Energy lost to heat/sound)</p>`;
+        html += `<p class="text-xs text-gray-500 mt-1">Efficiency: ${(KEf/KEi*100).toFixed(1)}%</p>`;
+    }
+
+} else {
+
+    html += `<p class="text-purple-400">Type: <b>Super-Elastic</b> (Energy Added! Explosion?)</p>`;
+
+}
                 
             } else {
                 badge.innerText = "MOMENTUM ERROR";
