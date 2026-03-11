@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Longitudinal Wave Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .canvas-wrapper {
+            position: relative;
+            flex: 1;
+            width: 100%;
+            min-height: 0; /* Prevents flex children from causing layout explosion */
+        }
+        canvas { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            cursor: crosshair; 
+            display: block;
+        }
+        .slider-label { display: flex; justify-content: space-between; font-size: 0.875rem; color: #475569; margin-bottom: 0.25rem; font-weight: 500; }
+        input[type=range] { width: 100%; cursor: pointer; accent-color: #3b82f6; }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden text-slate-800">
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm z-10 py-3 px-6 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd" />
+                </svg>
+            </div>
+            <h1 class="text-xl font-bold text-slate-800">Longitudinal Wave Physics</h1>
+        </div>
+        <div class="text-sm text-slate-500 hidden sm:block">
+            Click any particle to trace its specific motion
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="flex flex-1 overflow-hidden flex-col md:flex-row">
+        
+        <!-- Controls Sidebar -->
+        <aside class="w-full md:w-80 bg-white border-r border-slate-200 p-6 flex flex-col gap-6 overflow-y-auto shrink-0 shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-0">
+            
+            <!-- Playback Controls -->
+            <div class="flex gap-2">
+                <button id="playPauseBtn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2">
+                    <svg id="playIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                    </svg>
+                    <svg id="pauseIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                    <span id="playPauseText">Pause</span>
+                </button>
+                <button id="resetBtn" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors" title="Reset Time">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Parameters -->
+            <div class="space-y-5">
+                <div>
+                    <div class="slider-label">
+                        <span>Amplitude (A)</span>
+                        <span id="ampVal">1.0 m</span>
+                    </div>
+                    <input type="range" id="ampSlider" min="0" max="2" step="0.1" value="1.0">
+                </div>
+                
+                <div>
+                    <div class="slider-label">
+                        <span>Frequency (f)</span>
+                        <span id="freqVal">0.5 Hz</span>
+                    </div>
+                    <input type="range" id="freqSlider" min="0.1" max="2" step="0.1" value="0.5">
+                </div>
+
+                <div>
+                    <div class="slider-label">
+                        <span>Wavelength (λ)</span>
+                        <span id="waveVal">4.0 m</span>
+                    </div>
+                    <input type="range" id="waveSlider" min="2" max="10" step="0.1" value="4.0">
+                </div>
+
+                <div>
+                    <div class="slider-label">
+                        <span>Wave Direction</span>
+                    </div>
+                    <div class="flex bg-slate-100 rounded-lg p-1">
+                        <button id="dirRightBtn" class="flex-1 py-1.5 px-2 rounded-md bg-white shadow-sm text-sm font-semibold text-slate-800 transition-all">Right →</button>
+                        <button id="dirLeftBtn" class="flex-1 py-1.5 px-2 rounded-md text-sm font-medium text-slate-500 hover:text-slate-800 transition-all">← Left</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Legend/Info -->
+            <div class="mt-auto bg-slate-50 p-4 rounded-lg border border-slate-200 text-sm space-y-3">
+                <h3 class="font-bold text-slate-700">Legend</h3>
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+                    <span class="text-slate-600">Particle Position</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                    <span class="text-slate-600">Selected Particle</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 rounded-full bg-slate-300"></div>
+                    <span class="text-slate-600">Equilibrium Position</span>
+                </div>
+                <div class="pt-2 border-t border-slate-200 text-xs text-slate-500">
+                    Equation: <br>
+                    <code class="text-blue-600 font-mono text-sm">s(x,t) = A sin(2π(x/λ ± ft))</code>
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- Visualization Area -->
+        <main class="flex-1 flex flex-col p-4 md:p-6 gap-4 overflow-y-auto bg-slate-100">
+            
+            <!-- Canvas 1: Particle View -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col relative min-h-[150px]" style="height: 25%;">
+                <div class="absolute top-3 left-4 pointer-events-none z-10">
+                    <h2 class="font-bold text-slate-800 text-sm">Particle View (Longitudinal Wave)</h2>
+                    <p class="text-xs text-slate-500">Compressions and Rarefactions in the medium</p>
+                </div>
+                <div class="canvas-wrapper">
+                    <canvas id="particleCanvas"></canvas>
+                </div>
+            </div>
+
+            <!-- Canvas 2: s-d Graph -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col relative min-h-[220px]" style="height: 35%;">
+                <div class="absolute top-3 left-4 pointer-events-none z-10">
+                    <h2 class="font-bold text-slate-800 text-sm">Displacement - Distance (s-d) Graph</h2>
+                    <p class="text-xs text-slate-500">Snapshot of all particles at current time (<span id="currentTimeDisplay">0.00</span> s)</p>
+                </div>
+                <div class="canvas-wrapper">
+                    <canvas id="sdCanvas"></canvas>
+                </div>
+            </div>
+
+            <!-- Canvas 3: s-t Graph -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col relative min-h-[220px]" style="height: 40%;">
+                <div class="absolute top-3 left-4 pointer-events-none z-10">
+                    <h2 class="font-bold text-slate-800 text-sm">Displacement - Time (s-t) Graph</h2>
+                    <p class="text-xs text-slate-500">History of the <span class="text-red-500 font-semibold">selected particle</span></p>
+                </div>
+                <div class="canvas-wrapper">
+                    <canvas id="stCanvas"></canvas>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        // DOM Elements
+        const btnPlayPause = document.getElementById('playPauseBtn');
+        const playIcon = document.getElementById('playIcon');
+        const pauseIcon = document.getElementById('pauseIcon');
+        const playPauseText = document.getElementById('playPauseText');
+        const btnReset = document.getElementById('resetBtn');
+        
+        const ampSlider = document.getElementById('ampSlider');
+        const freqSlider = document.getElementById('freqSlider');
+        const waveSlider = document.getElementById('waveSlider');
+        const dirRightBtn = document.getElementById('dirRightBtn');
+        const dirLeftBtn = document.getElementById('dirLeftBtn');
+        
+        const ampVal = document.getElementById('ampVal');
+        const freqVal = document.getElementById('freqVal');
+        const waveVal = document.getElementById('waveVal');
+        const currentTimeDisplay = document.getElementById('currentTimeDisplay');
+
+        // Canvases & Contexts
+        const canvasParticle = document.getElementById('particleCanvas');
+        const ctxP = canvasParticle.getContext('2d');
+        const canvasSD = document.getElementById('sdCanvas');
+        const ctxSD = canvasSD.getContext('2d');
+        const canvasST = document.getElementById('stCanvas');
+        const ctxST = canvasST.getContext('2d');
+
+        // Physics State
+        let isPlaying = true;
+        let time = 0;
+        let lastTimestamp = 0;
+        
+        let A = parseFloat(ampSlider.value);
+        let f = parseFloat(freqSlider.value);
+        let lambda = parseFloat(waveSlider.value);
+        let waveDirection = 1; // 1 for right, -1 for left
+        
+        const maxA = 2.0; // Max amplitude for scaling
+        const L = 10;     // Total length of the simulated string/medium in meters
+        const numParticles = 60; // Number of dots
+        const particles = []; // Array of x0 positions
+        
+        for(let i=0; i<=numParticles; i++) {
+            particles.push(i * (L / numParticles));
+        }
+        
+        let selectedParticleIndex = Math.floor(numParticles / 2); // Start by selecting middle particle
+
+        // Geometry constraints for canvases (CSS Pixels)
+        const PADDING = {
+            top: 55,    // Buffer for titles
+            bottom: 35, // Buffer for X-axis labels
+            left: 60,   // Buffer for Y-axis labels
+            right: 40   // Buffer for end line
+        };
+
+        // Event Listeners for Controls
+        btnPlayPause.addEventListener('click', () => {
+            isPlaying = !isPlaying;
+            if(isPlaying) {
+                lastTimestamp = performance.now();
+                requestAnimationFrame(animationLoop);
+                playIcon.classList.add('hidden');
+                pauseIcon.classList.remove('hidden');
+                playPauseText.textContent = "Pause";
+            } else {
+                playIcon.classList.remove('hidden');
+                pauseIcon.classList.add('hidden');
+                playPauseText.textContent = "Play";
+            }
+        });
+
+        btnReset.addEventListener('click', () => {
+            time = 0;
+            if(!isPlaying) draw(); // Force redraw if paused
+        });
+
+        ampSlider.addEventListener('input', (e) => {
+            A = parseFloat(e.target.value);
+            ampVal.textContent = A.toFixed(1) + " m";
+            if(!isPlaying) draw();
+        });
+
+        freqSlider.addEventListener('input', (e) => {
+            f = parseFloat(e.target.value);
+            freqVal.textContent = f.toFixed(1) + " Hz";
+            if(!isPlaying) draw();
+        });
+
+        waveSlider.addEventListener('input', (e) => {
+            lambda = parseFloat(e.target.value);
+            waveVal.textContent = lambda.toFixed(1) + " m";
+            if(!isPlaying) draw();
+        });
+
+        dirRightBtn.addEventListener('click', () => {
+            waveDirection = 1;
+            dirRightBtn.className = "flex-1 py-1.5 px-2 rounded-md bg-white shadow-sm text-sm font-semibold text-slate-800 transition-all";
+            dirLeftBtn.className = "flex-1 py-1.5 px-2 rounded-md text-sm font-medium text-slate-500 hover:text-slate-800 transition-all";
+            if(!isPlaying) draw();
+        });
+
+        dirLeftBtn.addEventListener('click', () => {
+            waveDirection = -1;
+            dirLeftBtn.className = "flex-1 py-1.5 px-2 rounded-md bg-white shadow-sm text-sm font-semibold text-slate-800 transition-all";
+            dirRightBtn.className = "flex-1 py-1.5 px-2 rounded-md text-sm font-medium text-slate-500 hover:text-slate-800 transition-all";
+            if(!isPlaying) draw();
+        });
+
+        // Event Listeners for Canvas Interaction (Selecting Particles)
+        function handleCanvasClick(e, canvas) {
+            const rect = canvas.getBoundingClientRect();
+            // Mouse X relative to the element in CSS pixels
+            const mouseX = e.clientX - rect.left;
+            
+            const cw = rect.width; 
+            const drawAreaW = cw - PADDING.left - PADDING.right;
+            
+            // Map CSS mouse position back to physics domain (x0)
+            let mappedX0 = ((mouseX - PADDING.left) / drawAreaW) * L;
+            mappedX0 = Math.max(0, Math.min(L, mappedX0)); // Clamp
+
+            // Find closest particle
+            let closestIdx = 0;
+            let minDist = Infinity;
+            for(let i=0; i<particles.length; i++) {
+                const dist = Math.abs(particles[i] - mappedX0);
+                if(dist < minDist) {
+                    minDist = dist;
+                    closestIdx = i;
+                }
+            }
+            selectedParticleIndex = closestIdx;
+            if(!isPlaying) draw();
+        }
+
+        canvasParticle.addEventListener('mousedown', (e) => handleCanvasClick(e, canvasParticle));
+        canvasSD.addEventListener('mousedown', (e) => handleCanvasClick(e, canvasSD));
+
+        // Resize Handling
+        function resize() {
+            const dpr = window.devicePixelRatio || 1;
+            
+            const resizeCanvas = (canvas, ctx) => {
+                const rect = canvas.parentElement.getBoundingClientRect();
+                
+                // Set actual canvas size mathematically based on DPI
+                canvas.width = rect.width * dpr;
+                canvas.height = rect.height * dpr;
+                
+                // IMPORTANT FIX: Reset the transform matrix first, then scale. 
+                // Using .scale(dpr, dpr) multiple times without resetting caused the scaling bugs
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0); 
+                
+                // Maintain logical CSS size
+                canvas.style.width = `${rect.width}px`;
+                canvas.style.height = `${rect.height}px`;
+            };
+
+            resizeCanvas(canvasParticle, ctxP);
+            resizeCanvas(canvasSD, ctxSD);
+            resizeCanvas(canvasST, ctxST);
+            
+            if(!isPlaying) draw();
+        }
+        window.addEventListener('resize', resize);
+
+        // Core Physics Math
+        function getDisplacement(x0, t) {
+            // Wave equation traveling right (-ft) or left (+ft): s = A * sin(2*pi * (x/lambda - direction * f*t))
+            return A * Math.sin(2 * Math.PI * (x0 / lambda - waveDirection * f * t));
+        }
+
+        // Drawing Functions
+        function drawAxis(ctx, w, h, xlabel, ylabel) {
+            const cy = PADDING.top + (h - PADDING.top - PADDING.bottom) / 2;
+            
+            ctx.beginPath();
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 1;
+            
+            // X-axis
+            ctx.moveTo(PADDING.left, cy);
+            ctx.lineTo(w - PADDING.right + 10, cy);
+            
+            // Y-axis
+            ctx.moveTo(PADDING.left, PADDING.top - 10);
+            ctx.lineTo(PADDING.left, h - PADDING.bottom + 10);
+            ctx.stroke();
+
+            // X-axis arrow
+            ctx.beginPath();
+            ctx.fillStyle = '#94a3b8';
+            ctx.moveTo(w - PADDING.right + 15, cy);
+            ctx.lineTo(w - PADDING.right + 5, cy - 4);
+            ctx.lineTo(w - PADDING.right + 5, cy + 4);
+            ctx.fill();
+
+            // Y-axis arrow
+            ctx.beginPath();
+            ctx.moveTo(PADDING.left, PADDING.top - 15);
+            ctx.lineTo(PADDING.left - 4, PADDING.top - 5);
+            ctx.lineTo(PADDING.left + 4, PADDING.top - 5);
+            ctx.fill();
+
+            // Labels
+            ctx.fillStyle = '#64748b';
+            ctx.font = '12px Inter';
+            ctx.textAlign = 'center';
+            ctx.fillText(xlabel, w - PADDING.right, cy + 20);
+            
+            ctx.save();
+            ctx.translate(PADDING.left - 35, cy); // Shift left of Y axis midpoint
+            ctx.rotate(-Math.PI / 2);
+            ctx.textAlign = 'center';
+            ctx.fillText(ylabel, 0, 0);
+            ctx.restore();
+        }
+
+        function drawParticles() {
+            // Use CSS dimensions
+            const w = canvasParticle.width / (window.devicePixelRatio || 1);
+            const h = canvasParticle.height / (window.devicePixelRatio || 1);
+            
+            ctxP.clearRect(0, 0, w, h);
+            
+            const drawAreaW = w - PADDING.left - PADDING.right;
+            const cy = PADDING.top + (h - PADDING.top - PADDING.bottom) / 2;
+            
+            // Map physics X to Canvas X
+            const mapX = (x) => PADDING.left + (x / L) * drawAreaW;
+
+            // Draw equilibrium line
+            ctxP.beginPath();
+            ctxP.strokeStyle = '#e2e8f0';
+            ctxP.lineWidth = 2;
+            ctxP.moveTo(PADDING.left, cy);
+            ctxP.lineTo(w - PADDING.right, cy);
+            ctxP.stroke();
+
+            // Draw Particles
+            for(let i=0; i<particles.length; i++) {
+                const x0 = particles[i];
+                const s = getDisplacement(x0, time);
+                const isSelected = i === selectedParticleIndex;
+                
+                // Canvas positions
+                const cx0 = mapX(x0);
+                const cx = mapX(x0 + s);
+
+                // Draw equilibrium dot (faint)
+                ctxP.beginPath();
+                ctxP.fillStyle = '#cbd5e1';
+                ctxP.arc(cx0, cy, 3, 0, Math.PI * 2);
+                ctxP.fill();
+
+                // Draw displacement line for selected
+                if(isSelected) {
+                    ctxP.beginPath();
+                    ctxP.strokeStyle = 'rgba(239, 68, 68, 0.4)';
+                    ctxP.lineWidth = 2;
+                    ctxP.moveTo(cx0, cy);
+                    ctxP.lineTo(cx, cy);
+                    ctxP.stroke();
+                }
+
+                // Draw actual particle
+                ctxP.beginPath();
+                ctxP.fillStyle = isSelected ? '#ef4444' : '#3b82f6';
+                const radius = isSelected ? 6 : 4;
+                ctxP.arc(cx, cy, radius, 0, Math.PI * 2);
+                ctxP.fill();
+
+                if(isSelected) {
+                    ctxP.strokeStyle = '#fca5a5';
+                    ctxP.lineWidth = 2;
+                    ctxP.stroke();
+                    
+                    // Vertical link line to graph below
+                    ctxP.beginPath();
+                    ctxP.strokeStyle = 'rgba(239, 68, 68, 0.2)';
+                    ctxP.setLineDash([4, 4]);
+                    ctxP.moveTo(cx0, cy + 10);
+                    ctxP.lineTo(cx0, h);
+                    ctxP.stroke();
+                    ctxP.setLineDash([]);
+                }
+            }
+        }
+
+        function drawSDGraph() {
+            const w = canvasSD.width / (window.devicePixelRatio || 1);
+            const h = canvasSD.height / (window.devicePixelRatio || 1);
+            
+            ctxSD.clearRect(0, 0, w, h);
+            drawAxis(ctxSD, w, h, 'Distance (x)', 'Displacement (s)');
+
+            const drawAreaW = w - PADDING.left - PADDING.right;
+            const drawAreaH = h - PADDING.top - PADDING.bottom;
+            
+            const mapX = (x) => PADDING.left + (x / L) * drawAreaW;
+            const mapY = (y) => PADDING.top + drawAreaH/2 - (y / maxA) * (drawAreaH / 2);
+
+            // Link line from above
+            const selX0 = particles[selectedParticleIndex];
+            const cx0 = mapX(selX0);
+            
+            ctxSD.beginPath();
+            ctxSD.strokeStyle = 'rgba(239, 68, 68, 0.2)';
+            ctxSD.setLineDash([4, 4]);
+            ctxSD.moveTo(cx0, 0);
+            ctxSD.lineTo(cx0, h);
+            ctxSD.stroke();
+            ctxSD.setLineDash([]);
+
+            // Draw wave curve
+            ctxSD.beginPath();
+            ctxSD.strokeStyle = '#3b82f6';
+            ctxSD.lineWidth = 2;
+            
+            for(let i=0; i<particles.length; i++) {
+                const x0 = particles[i];
+                const s = getDisplacement(x0, time);
+                const cx = mapX(x0);
+                const cy = mapY(s);
+                
+                if(i === 0) ctxSD.moveTo(cx, cy);
+                else ctxSD.lineTo(cx, cy);
+            }
+            ctxSD.stroke();
+
+            // Highlight selected particle on the graph
+            const selS = getDisplacement(selX0, time);
+            const cy = mapY(selS);
+            
+            ctxSD.beginPath();
+            ctxSD.fillStyle = '#ef4444';
+            ctxSD.arc(cx0, cy, 6, 0, Math.PI * 2);
+            ctxSD.fill();
+            
+            // Draw guideline to Y axis
+            ctxSD.beginPath();
+            ctxSD.strokeStyle = 'rgba(239, 68, 68, 0.4)';
+            ctxSD.setLineDash([2, 2]);
+            ctxSD.moveTo(PADDING.left, cy);
+            ctxSD.lineTo(cx0, cy);
+            ctxSD.stroke();
+            ctxSD.setLineDash([]);
+        }
+
+        function drawSTGraph() {
+            const w = canvasST.width / (window.devicePixelRatio || 1);
+            const h = canvasST.height / (window.devicePixelRatio || 1);
+            
+            ctxST.clearRect(0, 0, w, h);
+            drawAxis(ctxST, w, h, 'Time (t)', 'Displacement (s)');
+
+            const drawAreaW = w - PADDING.left - PADDING.right;
+            const drawAreaH = h - PADDING.top - PADDING.bottom;
+            
+            // Time window: show the last 5 seconds of the selected particle
+            const timeWindow = 5; 
+            const startTime = Math.max(0, time - timeWindow + 0.5); // Pad right side
+            const endTime = startTime + timeWindow;
+
+            const mapT = (t) => PADDING.left + ((t - startTime) / timeWindow) * drawAreaW;
+            const mapY = (y) => PADDING.top + drawAreaH/2 - (y / maxA) * (drawAreaH / 2);
+
+            const selX0 = particles[selectedParticleIndex];
+
+            // Draw wave history curve
+            ctxST.beginPath();
+            ctxST.strokeStyle = '#ef4444'; // Red to match selected particle
+            ctxST.lineWidth = 2;
+            
+            let firstPt = true;
+            const samples = 100;
+            for(let i=0; i<=samples; i++) {
+                const tPlot = startTime + (i / samples) * timeWindow;
+                // Don't draw future if simulation hasn't reached it
+                if (tPlot > time) break; 
+                
+                const s = getDisplacement(selX0, tPlot);
+                const cx = mapT(tPlot);
+                const cy = mapY(s);
+                
+                if(firstPt) {
+                    ctxST.moveTo(cx, cy);
+                    firstPt = false;
+                } else {
+                    ctxST.lineTo(cx, cy);
+                }
+            }
+            ctxST.stroke();
+
+            // Highlight current state
+            const currentS = getDisplacement(selX0, time);
+            const currentCX = mapT(time);
+            const currentCY = mapY(currentS);
+
+            ctxST.beginPath();
+            ctxST.fillStyle = '#ef4444';
+            ctxST.arc(currentCX, currentCY, 6, 0, Math.PI * 2);
+            ctxST.fill();
+
+            // Drop line to time axis
+            ctxST.beginPath();
+            ctxST.strokeStyle = 'rgba(239, 68, 68, 0.4)';
+            ctxST.setLineDash([2, 2]);
+            const xAxisY = PADDING.top + drawAreaH/2;
+            ctxST.moveTo(currentCX, xAxisY);
+            ctxST.lineTo(currentCX, currentCY);
+            ctxST.moveTo(PADDING.left, currentCY);
+            ctxST.lineTo(currentCX, currentCY);
+            ctxST.stroke();
+            ctxST.setLineDash([]);
+        }
+
+        function draw() {
+            drawParticles();
+            drawSDGraph();
+            drawSTGraph();
+            currentTimeDisplay.textContent = time.toFixed(2);
+        }
+
+        // Main Animation Loop
+        function animationLoop(timestamp) {
+            if (!isPlaying) return;
+            
+            if (!lastTimestamp) lastTimestamp = timestamp;
+            const dt = (timestamp - lastTimestamp) / 1000; // in seconds
+            lastTimestamp = timestamp;
+            
+            time += dt;
+            
+            draw();
+            
+            requestAnimationFrame(animationLoop);
+        }
+
+        // Initialization
+        setTimeout(() => {
+            resize();
+            lastTimestamp = performance.now();
+            requestAnimationFrame(animationLoop);
+        }, 100);
+
+    </script>
+</body>
+</html>
