@@ -1092,7 +1092,7 @@ if (Math.abs(dKE) < 0) {
                 if (dKE < 0) {
                     bar.className = 'h-full bg-amber-500 transition-all duration-1000';
                     note.innerText = "Energy Dissipated (Heat/Sound)";
-                } else if (dKE > 10) {
+                } else if (dKE > 0) {
                     bar.className = 'h-full bg-purple-500 transition-all duration-1000';
                     note.innerText = "Energy Injected (Explosion)";
                 } else {
