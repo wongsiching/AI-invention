@@ -1089,10 +1089,10 @@ if (Math.abs(dKE) < 1000) {
             } else {
                 const ratio = Math.min((KEf / KEi) * 100, 100);
                 bar.style.width = ratio + '%';
-                if (dKE < -100) {
+                if (dKE < 0) {
                     bar.className = 'h-full bg-amber-500 transition-all duration-1000';
                     note.innerText = "Energy Dissipated (Heat/Sound)";
-                } else if (dKE > 100) {
+                } else if (dKE > 10) {
                     bar.className = 'h-full bg-purple-500 transition-all duration-1000';
                     note.innerText = "Energy Injected (Explosion)";
                 } else {
