@@ -995,7 +995,7 @@ const isPenetration = v1 > v2;
 
 // B) Kinetic Energy Gain Check
 // Energy increase is only allowed if initial KE was zero (explosion case)
-const energyIncrease = dKE > 100; // tolerance
+const energyIncrease = dKE > 0; // tolerance
 const isExplosionCase = KEi === 0 && KEf > 0;
 
 const isEnergyViolation = energyIncrease && !isExplosionCase;
